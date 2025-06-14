@@ -256,28 +256,26 @@
                 <div class="service-body">
                     <div class="input-group">
                         <label for="fastapi-url">FastAPI URL:</label>
-                        <input type="text" id="fastapi-url" value="https://dependency-health.onrender.com" placeholder="https://dependency-health.onrender.com">
+                        <input type="text" id="fastapi-url" value="https://lablab-ai-dependency-health.onrender.com" placeholder="https://lablab-ai-dependency-health.onrender.com">
                     </div>                    <div class="input-group">
                         <label for="backend-url">Next.js Backend URL:</label>
-                        <input type="text" id="backend-url" value="https://stackhub-backend.onrender.com" placeholder="https://your-backend.onrender.com">
+                        <input type="text" id="backend-url" value="https://lablab-ai-backend.onrender.com" placeholder="https://your-backend.onrender.com">
                     </div>
                 </div>
             </div>
             
-            <!-- FastAPI Direct Tests -->
-            <div class="service-section">
+            <!-- FastAPI Direct Tests -->            <div class="service-section">
                 <div class="service-header">
-                    <h2>🔬 FastAPI Service (Direct)</h2>
-                    <div class="url">Direct tests to your FastAPI dependency health service</div>
+                    <h2>🔬 Dependency Health Service</h2>
+                    <div class="url">Analyze repositories and files for security vulnerabilities</div>
                 </div>
-                <div class="service-body">
-                    <div class="test-group">
+                <div class="service-body">                    <div class="test-group">
                         <h3>Health Check</h3>
-                        <button class="btn" onclick="testFastAPIHealth()">
-                            <span class="status-indicator" id="fastapi-health-status"></span>
+                        <button class="btn" onclick="testBackendHealth()">
+                            <span class="status-indicator" id="service-health-status"></span>
                             Test Health
                         </button>
-                        <div id="fastapi-health-result" class="result" style="display: none;"></div>
+                        <div id="service-health-result" class="result" style="display: none;"></div>
                     </div>
                     
                     <div class="test-group">
@@ -285,50 +283,33 @@
                         <div class="input-group">
                             <label for="github-repo">Repository URL:</label>
                             <input type="text" id="github-repo" value="https://github.com/spaxe-dev/checks" placeholder="https://github.com/owner/repo">
-                        </div>
-                        <button class="btn" onclick="testFastAPIGitHub()">
-                            <span class="status-indicator" id="fastapi-github-status"></span>
+                        </div>                        <button class="btn" onclick="testGitHubAnalysis()">
+                            <span class="status-indicator" id="github-analysis-status"></span>
                             Analyze Repository
                         </button>
-                        <div id="fastapi-github-result" class="result" style="display: none;"></div>                    </div>
+                        <div id="github-analysis-result" class="result" style="display: none;"></div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Next.js Backend Tests -->
+            <!-- Backend Status and Management -->
             <div class="service-section">
                 <div class="service-header">
-                    <h2>🌐 Next.js Backend (API Gateway)</h2>
-                    <div class="url">Tests through your Next.js backend proxy</div>
+                    <h2>🌐 Backend Status & Management</h2>
+                    <div class="url">Monitor backend health and service status</div>
                 </div>
                 <div class="service-body">
                     <div class="test-group">
-                        <h3>Dashboard & Status</h3>
-                        <button class="btn" onclick="testBackendDashboard()">
-                            <span class="status-indicator" id="backend-dashboard-status"></span>
-                            Test Dashboard
-                        </button>
-                        <button class="btn btn-secondary" onclick="testBackendStatus()">
+                        <h3>System Status</h3>
+                        <button class="btn" onclick="testBackendStatus()">
                             <span class="status-indicator" id="backend-status-status"></span>
                             Test Status API
                         </button>
-                        <div id="backend-dashboard-result" class="result" style="display: none;"></div>
+                        <div id="backend-status-result" class="result" style="display: none;"></div>
                     </div>
                     
                     <div class="test-group">
-                        <h3>Dependency Health Proxy</h3>
-                        <button class="btn" onclick="testBackendProxy()">
-                            <span class="status-indicator" id="backend-proxy-status"></span>
-                            Test Proxy (GitHub)
-                        </button>
-                        <button class="btn btn-secondary" onclick="testBackendHealth()">
-                            <span class="status-indicator" id="backend-health-status"></span>
-                            Test Health Proxy
-                        </button>
-                        <div id="backend-proxy-result" class="result" style="display: none;"></div>
-                    </div>
-                    
-                    <div class="test-group">
-                        <h3>Service Health Endpoints</h3>
+                        <h3>Service Health</h3>
                         <button class="btn btn-secondary" onclick="testAutoTests()">
                             <span class="status-indicator" id="auto-tests-status"></span>
                             Auto Tests
@@ -362,7 +343,7 @@
     <script>
         // Helper functions
         function getFastAPIUrl() {
-            return document.getElementById('fastapi-url').value || 'https://dependency-health.onrender.com';
+            return document.getElementById('fastapi-url').value || 'https://lablab-ai-dependency-health.onrender.com';
         }
         
         function getBackendUrl() {
@@ -574,27 +555,26 @@
                     `❌ PROXY FAILED\n${result.error || 'Unknown error'}`, 'error');
             }
         }
-        
-        async function testBackendHealth() {
+          async function testBackendHealth() {
             const backendUrl = getBackendUrl();
             if (!backendUrl) {
                 alert('Please enter your Next.js Backend URL');
                 return;
             }
             
-            setStatus('backend-health-status', 'loading');
-            showResult('backend-proxy-result', 'Testing health proxy...', 'loading');
+            setStatus('service-health-status', 'loading');
+            showResult('service-health-result', 'Testing dependency health service...', 'loading');
             
             const result = await makeRequest(`${backendUrl}/api/dependency-health/health`);
             
             if (result.success) {
-                setStatus('backend-health-status', 'success');
-                showResult('backend-proxy-result', 
-                    `✅ HEALTH PROXY SUCCESS (${result.status})\n\n${formatJSON(result.data)}`, 'success');
+                setStatus('service-health-status', 'success');
+                showResult('service-health-result', 
+                    `✅ HEALTH CHECK SUCCESS\n\n📊 SERVICE STATUS:\n${formatJSON(result.data)}`, 'success');
             } else {
-                setStatus('backend-health-status', 'error');
-                showResult('backend-proxy-result', 
-                    `❌ HEALTH PROXY FAILED\n${result.error || 'Unknown error'}`, 'error');
+                setStatus('service-health-status', 'error');
+                showResult('service-health-result', 
+                    `❌ HEALTH CHECK FAILED\n${result.error || 'Unknown error'}`, 'error');
             }
         }
         
@@ -714,6 +694,59 @@
             showResult('all-tests-result', summary, 'success');
         }
         
+        async function testGitHubAnalysis() {
+            const backendUrl = getBackendUrl();
+            const repoUrl = document.getElementById('github-repo').value || 'https://github.com/spaxe-dev/checks';
+            
+            if (!backendUrl) {
+                alert('Please enter your Next.js Backend URL');
+                return;
+            }
+            
+            setStatus('github-analysis-status', 'loading');
+            showResult('github-analysis-result', 'Analyzing GitHub repository...', 'loading');
+            
+            const result = await makeRequest(`${backendUrl}/api/dependency-health/check-github`, {
+                method: 'POST',
+                body: JSON.stringify({ repo_url: repoUrl })
+            });
+            
+            if (result.success) {
+                setStatus('github-analysis-status', 'success');
+                const data = result.data;
+                
+                let summary = `✅ ANALYSIS COMPLETE\n\n`;
+                
+                if (data.success && data.data) {
+                    summary += `📊 REPOSITORY ANALYSIS RESULTS:\n`;
+                    summary += `   Repository: ${repoUrl}\n`;
+                    summary += `   Dependencies: ${data.data.total_dependencies}\n`;
+                    summary += `   Vulnerabilities: ${data.data.vulnerabilities_found}\n`;
+                    summary += `   Critical: ${data.data.risk_summary?.CRITICAL || 0}\n`;
+                    summary += `   High: ${data.data.risk_summary?.HIGH || 0}\n`;
+                    summary += `   Medium: ${data.data.risk_summary?.MEDIUM || 0}\n`;
+                    summary += `   Low: ${data.data.risk_summary?.LOW || 0}\n\n`;
+                    
+                    if (data.data.dependency_risk_details && data.data.dependency_risk_details.length > 0) {
+                        summary += `🔍 TOP VULNERABLE DEPENDENCIES:\n`;
+                        data.data.dependency_risk_details.slice(0, 5).forEach(dep => {
+                            summary += `   • ${dep.dependency}: ${dep.vulnerabilities_count} vulnerabilities\n`;
+                        });
+                    }
+                } else {
+                    summary += `Data: ${formatJSON(data)}\n\n`;
+                }
+                
+                summary += `\n📋 FULL RESPONSE:\n${formatJSON(result.data)}`;
+                
+                showResult('github-analysis-result', summary, 'success');
+            } else {
+                setStatus('github-analysis-status', 'error');
+                showResult('github-analysis-result', 
+                    `❌ ANALYSIS FAILED\n${result.error || 'Unknown error'}`, 'error');
+            }
+        }
+
         // Auto-test FastAPI on page load
         window.onload = function() {
             setTimeout(testFastAPIHealth, 1000);
