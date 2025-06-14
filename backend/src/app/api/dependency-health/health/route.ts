@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { API_CONFIG } from '../../config';
 
 const DEPENDENCY_HEALTH_API = API_CONFIG.services.dependencyHealth.baseUrl;
