@@ -1,0 +1,15 @@
+name: Keep Services Awake
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # Every 10 minutes
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping FastAPI
+        run: curl -f https://dependency-health.onrender.com/health
+        
+      - name: Ping Next.js Backend  
+        run: curl -f https://stackhub-backend.onrender.com/api/status
