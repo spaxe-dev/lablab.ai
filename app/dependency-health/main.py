@@ -52,12 +52,23 @@ class DependencyResult(BaseModel):
     is_vulnerable: bool
     risk_level: str
 
+class DependencyRiskDetails(BaseModel):
+    name: str
+    version: str
+    risk_level: str
+    vulnerability_count: int
+    critical_cves: List[str]
+    high_cves: List[str]
+    medium_cves: List[str]
+    low_cves: List[str]
+
 class HealthCheckResponse(BaseModel):
     total_dependencies: int
     vulnerable_dependencies: int
     vulnerabilities_found: int
     risk_summary: Dict[str, int]
-    dependency_risk_summary: Dict[str, List[str]]  # New field: risk level -> dependency names
+    dependency_risk_summary: Dict[str, List[str]]  # risk level -> dependency names
+    dependency_risk_details: Dict[str, List[DependencyRiskDetails]]  # detailed CVE info per risk level
     results: List[DependencyResult]
     scan_timestamp: str
 
@@ -241,6 +252,7 @@ async def analyze_dependencies(dependencies: List[Dependency]) -> HealthCheckRes
     results = []
     risk_summary = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "UNKNOWN": 0}
     dependency_risk_summary = {"CRITICAL": [], "HIGH": [], "MEDIUM": [], "LOW": [], "UNKNOWN": [], "NONE": []}
+    dependency_risk_details = {"CRITICAL": [], "HIGH": [], "MEDIUM": [], "LOW": [], "UNKNOWN": [], "NONE": []}
     total_vulnerabilities = 0
     
     async with VulnerabilityChecker() as checker:
@@ -253,15 +265,43 @@ async def analyze_dependencies(dependencies: List[Dependency]) -> HealthCheckRes
             is_vulnerable = len(vulnerabilities) > 0
             total_vulnerabilities += len(vulnerabilities)
             
+            # Categorize CVEs by severity
+            critical_cves = [v.cve_id for v in vulnerabilities if v.severity == "CRITICAL"]
+            high_cves = [v.cve_id for v in vulnerabilities if v.severity == "HIGH"]
+            medium_cves = [v.cve_id for v in vulnerabilities if v.severity == "MEDIUM"]
+            low_cves = [v.cve_id for v in vulnerabilities if v.severity == "LOW"]
+            
             # Determine risk level
             if vulnerabilities:
                 max_severity = max(vuln.severity for vuln in vulnerabilities)
                 risk_level = max_severity
                 risk_summary[max_severity] += 1
                 dependency_risk_summary[max_severity].append(dependency.name)
+                
+                # Add detailed risk information
+                dependency_risk_details[max_severity].append(DependencyRiskDetails(
+                    name=dependency.name,
+                    version=dependency.version,
+                    risk_level=risk_level,
+                    vulnerability_count=len(vulnerabilities),
+                    critical_cves=critical_cves,
+                    high_cves=high_cves,
+                    medium_cves=medium_cves,
+                    low_cves=low_cves
+                ))
             else:
                 risk_level = "NONE"
                 dependency_risk_summary["NONE"].append(dependency.name)
+                dependency_risk_details["NONE"].append(DependencyRiskDetails(
+                    name=dependency.name,
+                    version=dependency.version,
+                    risk_level=risk_level,
+                    vulnerability_count=0,
+                    critical_cves=[],
+                    high_cves=[],
+                    medium_cves=[],
+                    low_cves=[]
+                ))
             
             results.append(DependencyResult(
                 dependency=dependency,
@@ -279,6 +319,7 @@ async def analyze_dependencies(dependencies: List[Dependency]) -> HealthCheckRes
         vulnerabilities_found=total_vulnerabilities,
         risk_summary=risk_summary,
         dependency_risk_summary=dependency_risk_summary,
+        dependency_risk_details=dependency_risk_details,
         results=results,
         scan_timestamp=datetime.now().isoformat()
     )
