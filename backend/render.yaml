@@ -1,13 +1,17 @@
-# Render.com deployment file for Next.js Backend
-# This file is used by Render to deploy the Next.js backend service
-
-# Build Command: ./build.sh
-# Start Command: npm start
-# Environment: Node.js
-# Port: 3000 (default Next.js port)
-
-# Required Environment Variables:
-# - DEPENDENCY_HEALTH_URL: URL of the deployed FastAPI dependency health service
-# - AUTO_TESTS_URL: URL of the auto-tests service (optional)
-# - PR_REVIEW_URL: URL of the PR review service (optional)
-# - NODE_ENV: production
+services:
+  - type: web
+    name: stackhub-backend
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start  
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DEPENDENCY_HEALTH_URL
+        value: https://dependency-health.onrender.com
+      - key: AUTO_TESTS_URL
+        value: http://localhost:8001
+      - key: PR_REVIEW_URL
+        value: http://localhost:8002
+    healthCheckPath: /api/status
