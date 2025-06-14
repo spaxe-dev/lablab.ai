@@ -6,7 +6,7 @@ This guide helps frontend developers integrate and display the Dependency Health
 ## 🔗 API Endpoints
 
 ### Base URL
-- **Production**: `https://lablab-ai-backend.onrender.com`
+- **Production**: `https://stackhub-backend.onrender.com`
 
 *Note: All requests should go through the backend API gateway. Direct FastAPI access is not needed for frontend integration.*
 
