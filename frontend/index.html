@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Health Checker - Test Frontend</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .service-section {
+            margin-bottom: 40px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .service-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e1e8ed;
+        }
+        
+        .service-header h2 {
+            color: #1e3c72;
+            margin-bottom: 5px;
+        }
+        
+        .service-header .url {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .service-body {
+            padding: 20px;
+        }
+        
+        .test-group {
+            margin-bottom: 25px;
+        }
+        
+        .test-group h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .result.loading {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.success {
+            background: #28a745;
+        }
+        
+        .status-indicator.error {
+            background: #dc3545;
+        }
+        
+        .status-indicator.loading {
+            background: #17a2b8;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .vulnerability-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .vuln-card {
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .vuln-card.critical {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .vuln-card.high {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .vuln-card.medium {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .vuln-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .vuln-label {
+            font-weight: 600;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Dependency Health Checker</h1>
+            <p>Test your FastAPI and Next.js Backend Services</p>
+        </div>
+        
+        <div class="content">
+            <!-- Configuration Section -->
+            <div class="service-section">
+                <div class="service-header">
+                    <h2>⚙️ Configuration</h2>
+                    <div class="url">Set your service URLs</div>
+                </div>
+                <div class="service-body">                    <div class="input-group">
+                        <label for="fastapi-url">FastAPI URL:</label>
+                        <input type="text" id="fastapi-url" value="https://dependency-health.onrender.com" placeholder="https://dependency-health.onrender.com">
+                    </div>
+                    <div class="input-group">
+                        <label for="backend-url">Next.js Backend URL:</label>
+                        <input type="text" id="backend-url" value="https://stackhub-backend.onrender.com" placeholder="https://your-backend.onrender.com">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FastAPI Direct Tests -->            <div class="service-section">
+                <div class="service-header">
+                    <h2>🔬 FastAPI Service (Direct)</h2>
+                    <div class="url">Direct tests to your FastAPI dependency health service</div>
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                        ⚠️ Note: Direct calls may fail due to CORS restrictions. Use the Backend Proxy for reliable testing.
+                    </div>
+                </div>
+                <div class="service-body">
+                    <div class="test-group">
+                        <h3>Health Check</h3>
+                        <button class="btn" onclick="testFastAPIHealth()">
+                            <span class="status-indicator" id="fastapi-health-status"></span>
+                            Test Health
+                        </button>
+                        <div id="fastapi-health-result" class="result" style="display: none;"></div>                    </div>
+                </div>
+            </div>
+            
+            <!-- Next.js Backend Tests -->            <div class="service-section">
+                <div class="service-header">
+                    <h2>🌐 Next.js Backend (API Gateway)</h2>
+                    <div class="url">Tests through your Next.js backend proxy</div>
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                        ✅ Recommended: This proxy handles CORS and provides the same CVE analysis results as the direct FastAPI service.
+                    </div>
+                </div>
+                <div class="service-body">
+                    <div class="test-group">
+                        <h3>Dashboard & Status</h3>
+                        <button class="btn" onclick="testBackendDashboard()">
+                            <span class="status-indicator" id="backend-dashboard-status"></span>
+                            Test Dashboard
+                        </button>
+                        <button class="btn btn-secondary" onclick="testBackendStatus()">
+                            <span class="status-indicator" id="backend-status-status"></span>
+                            Test Status API
+                        </button>
+                        <div id="backend-dashboard-result" class="result" style="display: none;"></div>
+                    </div>
+                      <div class="test-group">
+                        <h3>Dependency Health Proxy</h3>
+                        <div class="input-group">
+                            <label for="backend-github-repo">Repository URL:</label>
+                            <input type="text" id="backend-github-repo" value="https://github.com/spaxe-dev/checks" placeholder="https://github.com/owner/repo">
+                        </div>
+                        <button class="btn" onclick="testBackendProxy()">
+                            <span class="status-indicator" id="backend-proxy-status"></span>
+                            Analyze Repository (GitHub)
+                        </button>
+                        <button class="btn btn-secondary" onclick="testBackendHealth()">
+                            <span class="status-indicator" id="backend-health-status"></span>
+                            Test Health Proxy
+                        </button>
+                        <div id="backend-proxy-result" class="result" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="test-group">
+                        <h3>Service Health Endpoints</h3>
+                        <button class="btn btn-secondary" onclick="testAutoTests()">
+                            <span class="status-indicator" id="auto-tests-status"></span>
+                            Auto Tests
+                        </button>
+                        <button class="btn btn-secondary" onclick="testPRReview()">
+                            <span class="status-indicator" id="pr-review-status"></span>
+                            PR Review
+                        </button>
+                        <div id="backend-services-result" class="result" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Run All Tests -->
+            <div class="service-section">
+                <div class="service-header">
+                    <h2>🚀 Complete Test Suite</h2>
+                    <div class="url">Run all tests to verify your deployment</div>
+                </div>
+                <div class="service-body">
+                    <button class="btn btn-success" onclick="runAllTests()">
+                        <span class="status-indicator" id="all-tests-status"></span>
+                        🧪 Run All Tests
+                    </button>
+                    <div id="all-tests-result" class="result" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper functions
+        function getFastAPIUrl() {
+            return document.getElementById('fastapi-url').value || 'https://dependency-health.onrender.com';
+        }
+        
+        function getBackendUrl() {
+            return document.getElementById('backend-url').value;
+        }
+        
+        function setStatus(elementId, status) {
+            const element = document.getElementById(elementId);
+            element.className = `status-indicator ${status}`;
+        }
+        
+        function showResult(elementId, content, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.textContent = content;
+        }
+        
+        function formatJSON(obj) {
+            return JSON.stringify(obj, null, 2);
+        }
+          async function makeRequest(url, options = {}) {
+            try {
+                console.log('Making request to:', url);
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                return {
+                    success: response.ok,
+                    status: response.status,
+                    data: data
+                };
+            } catch (error) {
+                console.error('Request failed:', error);
+                return {
+                    success: false,
+                    error: `${error.name}: ${error.message}`
+                };
+            }
+        }
+        
+        // FastAPI Tests
+        async function testFastAPIHealth() {
+            setStatus('fastapi-health-status', 'loading');
+            showResult('fastapi-health-result', 'Testing FastAPI health...', 'loading');
+            
+            const result = await makeRequest(`${getFastAPIUrl()}/health`);
+            
+            if (result.success) {
+                setStatus('fastapi-health-status', 'success');
+                showResult('fastapi-health-result', 
+                    `✅ SUCCESS (${result.status})\n\n${formatJSON(result.data)}`, 'success');
+            } else {
+                setStatus('fastapi-health-status', 'error');
+                showResult('fastapi-health-result', 
+                    `❌ FAILED\n${result.error || 'Unknown error'}`, 'error');
+            }
+        }
+            
+        // Backend Tests
+        async function testBackendDashboard() {
+            const backendUrl = getBackendUrl();
+            if (!backendUrl) {
+                alert('Please enter your Next.js Backend URL');
+                return;
+            }
+            
+            setStatus('backend-dashboard-status', 'loading');
+            showResult('backend-dashboard-result', 'Testing dashboard...', 'loading');
+            
+            try {
+                const response = await fetch(`${backendUrl}/`);
+                const text = await response.text();
+                
+                if (response.ok) {
+                    setStatus('backend-dashboard-status', 'success');
+                    showResult('backend-dashboard-result', 
+                        `✅ DASHBOARD SUCCESS (${response.status})\n\nDashboard loaded successfully!\nContent preview:\n${text.substring(0, 200)}...`, 'success');
+                } else {
+                    setStatus('backend-dashboard-status', 'error');
+                    showResult('backend-dashboard-result', 
+                        `❌ DASHBOARD FAILED (${response.status})\n${text}`, 'error');
+                }
+            } catch (error) {
+                setStatus('backend-dashboard-status', 'error');
+                showResult('backend-dashboard-result', 
+                    `❌ DASHBOARD FAILED\n${error.message}`, 'error');
+            }
+        }
+        
+        async function testBackendStatus() {
+            const backendUrl = getBackendUrl();
+            if (!backendUrl) {
+                alert('Please enter your Next.js Backend URL');
+                return;
+            }
+            
+            setStatus('backend-status-status', 'loading');
+            showResult('backend-dashboard-result', 'Testing status API...', 'loading');
+            
+            const result = await makeRequest(`${backendUrl}/api/status`);
+            
+            if (result.success) {
+                setStatus('backend-status-status', 'success');
+                showResult('backend-dashboard-result', 
+                    `✅ STATUS API SUCCESS (${result.status})\n\n${formatJSON(result.data)}`, 'success');
+            } else {
+                setStatus('backend-status-status', 'error');
+                showResult('backend-dashboard-result', 
+                    `❌ STATUS API FAILED\n${result.error || 'Unknown error'}`, 'error');
+            }
+        }
+          async function testBackendProxy() {
+            const backendUrl = getBackendUrl();
+            const repoUrl = document.getElementById('backend-github-repo').value || 'https://github.com/spaxe-dev/checks';
+            
+            if (!backendUrl) {
+                alert('Please enter your Next.js Backend URL');
+                return;
+            }
+            
+            setStatus('backend-proxy-status', 'loading');
+            showResult('backend-proxy-result', 'Testing backend proxy...', 'loading');
+            
+            const result = await makeRequest(`${backendUrl}/api/dependency-health/check-github`, {
+                method: 'POST',
+                body: JSON.stringify({ repo_url: repoUrl })
+            });
+            
+            if (result.success) {
+                setStatus('backend-proxy-status', 'success');
+                const data = result.data;
+                
+                let summary = `✅ PROXY SUCCESS (${result.status})\n\n`;
+                
+                if (data.success && data.data) {
+                    summary += `🔄 Proxy forwarded data from FastAPI successfully!\n\n`;
+                    summary += `📊 ANALYSIS RESULTS:\n`;
+                    summary += `   Dependencies: ${data.data.total_dependencies}\n`;
+                    summary += `   Vulnerabilities: ${data.data.vulnerabilities_found}\n`;
+                    summary += `   Critical: ${data.data.risk_summary?.CRITICAL || 0}\n`;
+                    summary += `   Medium: ${data.data.risk_summary?.MEDIUM || 0}\n\n`;
+                } else {
+                    summary += `Data structure: ${formatJSON(data)}\n\n`;
+                }
+                
+                summary += `📋 FULL RESPONSE:\n${formatJSON(result.data)}`;
+                
+                showResult('backend-proxy-result', summary, 'success');
+            } else {
+                setStatus('backend-proxy-status', 'error');
+                showResult('backend-proxy-result', 
+                    `❌ PROXY FAILED\n${result.error || 'Unknown error'}`, 'error');
+            }
+        }
+        
+        async function testBackendHealth() {
+            const backendUrl = getBackendUrl();
+            if (!backendUrl) {
+                alert('Please enter your Next.js Backend URL');
+                return;
+            }
+            
+            setStatus('backend-health-status', 'loading');
+            showResult('backend-proxy-result', 'Testing health proxy...', 'loading');
+            
+            const result = await makeRequest(`${backendUrl}/api/dependency-health/health`);
+            
+            if (result.success) {
+                setStatus('backend-health-status', 'success');
+                showResult('backend-proxy-result', 
+                    `✅ HEALTH PROXY SUCCESS (${result.status})\n\n${formatJSON(result.data)}`, 'success');
+            } else {
+                setStatus('backend-health-status', 'error');
+                showResult('backend-proxy-result', 
+                    `❌ HEALTH PROXY FAILED\n${result.error || 'Unknown error'}`, 'error');
+            }
+        }
+        
+        async function testAutoTests() {
+            const backendUrl = getBackendUrl();
+            if (!backendUrl) {
+                alert('Please enter your Next.js Backend URL');
+                return;
+            }
+            
+            setStatus('auto-tests-status', 'loading');
+            showResult('backend-services-result', 'Testing auto-tests service...', 'loading');
+            
+            const result = await makeRequest(`${backendUrl}/api/auto-tests/health`);
+            
+            if (result.success) {
+                setStatus('auto-tests-status', 'success');
+                showResult('backend-services-result', 
+                    `✅ AUTO-TESTS SUCCESS (${result.status})\n\n${formatJSON(result.data)}`, 'success');
+            } else {
+                setStatus('auto-tests-status', 'error');
+                showResult('backend-services-result', 
+                    `❌ AUTO-TESTS FAILED\n${result.error || 'Unknown error'}`, 'error');
+            }
+        }
+        
+        async function testPRReview() {
+            const backendUrl = getBackendUrl();
+            if (!backendUrl) {
+                alert('Please enter your Next.js Backend URL');
+                return;
+            }
+            
+            setStatus('pr-review-status', 'loading');
+            showResult('backend-services-result', 'Testing PR review service...', 'loading');
+            
+            const result = await makeRequest(`${backendUrl}/api/pr-review/health`);
+            
+            if (result.success) {
+                setStatus('pr-review-status', 'success');
+                showResult('backend-services-result', 
+                    `✅ PR REVIEW SUCCESS (${result.status})\n\n${formatJSON(result.data)}`, 'success');
+            } else {
+                setStatus('pr-review-status', 'error');
+                showResult('backend-services-result', 
+                    `❌ PR REVIEW FAILED\n${result.error || 'Unknown error'}`, 'error');
+            }
+        }
+        
+        async function runAllTests() {
+            setStatus('all-tests-status', 'loading');
+            showResult('all-tests-result', 'Running comprehensive test suite...\n\n', 'loading');
+            
+            let summary = '🧪 COMPREHENSIVE TEST RESULTS\n';
+            summary += '================================\n\n';
+              // Test FastAPI Health
+            summary += '1. FastAPI Health... ';
+            const fastapiHealth = await makeRequest(`${getFastAPIUrl()}/health`);
+            summary += fastapiHealth.success ? '✅ PASS\n' : '❌ FAIL\n';
+            
+            const backendUrl = getBackendUrl();
+            if (backendUrl) {
+                // Test Backend Dashboard
+                summary += '2. Backend Dashboard... ';
+                try {
+                    const dashResponse = await fetch(`${backendUrl}/`);
+                    summary += dashResponse.ok ? '✅ PASS\n' : '❌ FAIL\n';
+                } catch {
+                    summary += '❌ FAIL\n';
+                }
+                
+                // Test Backend Status
+                summary += '3. Backend Status API... ';
+                const backendStatus = await makeRequest(`${backendUrl}/api/status`);
+                summary += backendStatus.success ? '✅ PASS\n' : '❌ FAIL\n';
+                
+                // Test Backend Proxy
+                summary += '4. Backend Proxy (GitHub Analysis)... ';
+                const backendProxy = await makeRequest(`${backendUrl}/api/dependency-health/check-github`, {
+                    method: 'POST',
+                    body: JSON.stringify({ repo_url: document.getElementById('backend-github-repo').value || 'https://github.com/spaxe-dev/checks' })
+                });
+                summary += backendProxy.success ? '✅ PASS\n' : '❌ FAIL\n';
+                  // Test Service Health Endpoints
+                summary += '5. Auto-Tests Health... ';
+                const autoTests = await makeRequest(`${backendUrl}/api/auto-tests/health`);
+                summary += autoTests.success ? '✅ PASS\n' : '❌ FAIL\n';
+                
+                summary += '6. PR Review Health... ';
+                const prReview = await makeRequest(`${backendUrl}/api/pr-review/health`);
+                summary += prReview.success ? '✅ PASS\n' : '❌ FAIL\n';
+            } else {
+                summary += '\n⚠️  Backend URL not provided - skipping backend tests\n';
+            }
+            
+            summary += '\n🎯 DEPLOYMENT STATUS:\n';
+            summary += `FastAPI Service: ${fastapiHealth.success ? '🟢 OPERATIONAL' : '🔴 DOWN'}\n`;
+            if (backendUrl) {
+                const backendWorking = await makeRequest(`${backendUrl}/api/status`);
+                summary += `Next.js Backend: ${backendWorking.success ? '🟢 OPERATIONAL' : '🔴 DOWN'}\n`;
+                summary += `Integration: ${backendWorking.success && fastapiHealth.success ? '🟢 WORKING' : '🔴 ISSUES'}\n`;
+            }
+            
+            summary += '\n🎉 Test suite complete!';
+            
+            setStatus('all-tests-status', 'success');
+            showResult('all-tests-result', summary, 'success');
+        }
+        
+        // Auto-test FastAPI on page load
+        window.onload = function() {
+            setTimeout(testFastAPIHealth, 1000);
+        };
+    </script>
+</body>
+</html>
