@@ -57,6 +57,7 @@ class HealthCheckResponse(BaseModel):
     vulnerable_dependencies: int
     vulnerabilities_found: int
     risk_summary: Dict[str, int]
+    dependency_risk_summary: Dict[str, List[str]]  # New field: risk level -> dependency names
     results: List[DependencyResult]
     scan_timestamp: str
 
@@ -239,6 +240,7 @@ async def analyze_dependencies(dependencies: List[Dependency]) -> HealthCheckRes
     """Analyze dependencies for vulnerabilities"""
     results = []
     risk_summary = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "UNKNOWN": 0}
+    dependency_risk_summary = {"CRITICAL": [], "HIGH": [], "MEDIUM": [], "LOW": [], "UNKNOWN": [], "NONE": []}
     total_vulnerabilities = 0
     
     async with VulnerabilityChecker() as checker:
@@ -256,8 +258,10 @@ async def analyze_dependencies(dependencies: List[Dependency]) -> HealthCheckRes
                 max_severity = max(vuln.severity for vuln in vulnerabilities)
                 risk_level = max_severity
                 risk_summary[max_severity] += 1
+                dependency_risk_summary[max_severity].append(dependency.name)
             else:
                 risk_level = "NONE"
+                dependency_risk_summary["NONE"].append(dependency.name)
             
             results.append(DependencyResult(
                 dependency=dependency,
@@ -274,6 +278,7 @@ async def analyze_dependencies(dependencies: List[Dependency]) -> HealthCheckRes
         vulnerable_dependencies=sum(1 for r in results if r.is_vulnerable),
         vulnerabilities_found=total_vulnerabilities,
         risk_summary=risk_summary,
+        dependency_risk_summary=dependency_risk_summary,
         results=results,
         scan_timestamp=datetime.now().isoformat()
     )
