@@ -74,7 +74,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # OpenRouter configuration
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-DEEPSEEK_MODEL = "deepseek/deepseek-r1-0528:free"
+DEEPSEEK_MODEL = "deepseek/deepseek-r1"  # Updated model name
 
 # GitHub App authentication
 def generate_jwt_token() -> str:
@@ -162,7 +162,12 @@ async def health_check():
         "ai_powered": bool(OPENROUTER_API_KEY),
         "ai_model": DEEPSEEK_MODEL if OPENROUTER_API_KEY else "disabled",
         "database_connected": True,
-        "app_type": "GitHub App"
+        "app_type": "GitHub App",
+        "debug_info": {
+            "openrouter_configured": bool(OPENROUTER_API_KEY),
+            "model_name": DEEPSEEK_MODEL,
+            "base_url": OPENROUTER_BASE_URL
+        }
     }
 
 @app.get("/api/reviews")
@@ -475,6 +480,10 @@ For EACH issue found, provide:
 **REMEMBER:** Be as thorough as ChatGPT doing a code review. Don't miss subtle issues that could cause bugs in production!"""
 
         async with httpx.AsyncClient() as client:
+            logger.info(f"🤖 Making AI request to OpenRouter for {filename}")
+            logger.info(f"🔧 Model: {DEEPSEEK_MODEL}")
+            logger.info(f"🔑 API Key configured: {bool(OPENROUTER_API_KEY)}")
+            
             response = await client.post(
                 f"{OPENROUTER_BASE_URL}/chat/completions",
                 headers={
@@ -502,9 +511,14 @@ For EACH issue found, provide:
                 timeout=45.0  # Increased timeout for thorough analysis
             )
             
+            logger.info(f"🌐 OpenRouter response status: {response.status_code}")
+            
             if response.status_code == 200:
                 result = response.json()
                 ai_response = result["choices"][0]["message"]["content"]
+                
+                logger.info(f"✅ AI response received: {len(ai_response)} characters")
+                logger.info(f"🔍 AI response preview: {ai_response[:200]}...")
                 
                 # Enhanced parsing for the new comprehensive format
                 ai_issues = []
@@ -574,11 +588,12 @@ For EACH issue found, provide:
                     "token_usage": usage
                 }
             else:
-                logger.error(f"OpenRouter API error: {response.status_code} - {response.text}")
+                logger.error(f"❌ OpenRouter API error: {response.status_code}")
+                logger.error(f"📄 Response body: {response.text}")
                 return {
                     "ai_issues": [],
                     "ai_suggestions": [f"AI review failed: API error {response.status_code}"],
-                    "ai_summary": "AI review unavailable"
+                    "ai_summary": "AI review unavailable - API error"
                 }
                 
     except asyncio.TimeoutError:
