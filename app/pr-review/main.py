@@ -574,11 +574,11 @@ For EACH issue found, provide:
                     # Extract the last meaningful line as summary
                     meaningful_lines = [line for line in lines if line.strip() and not line.startswith(('**', '#', '-', '•'))]
                     ai_summary = meaningful_lines[-1] if meaningful_lines else "AI analysis completed"
-                
-                # Token usage logging
+                  # Token usage logging
                 usage = result.get("usage", {})
                 logger.info(f"AI review completed for {filename}. Issues: {len(ai_issues)}, Suggestions: {len(ai_suggestions)}, Tokens: {usage.get('total_tokens', 'unknown')}")
-                  return {
+                
+                return {
                     "ai_issues": ai_issues[:15],  # Increased limit
                     "ai_suggestions": ai_suggestions[:15], 
                     "ai_summary": ai_summary or "AI analysis completed",
