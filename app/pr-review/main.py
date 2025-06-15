@@ -865,7 +865,7 @@ async def post_github_review_comment(pr, analysis: Dict):
         
         comment += "\n"    # Footer with AI info
     footer = "---\n"
-    footer += "**Automated by AI PR Review Bot** | *LabLab.ai Hackathon 2025*\n\n"
+    footer += "**Automated by AI PR Review Bot** | *TraeIDE Limitless Hackathon 2025*\n\n"
     if analysis.get("ai_enabled"):
         footer += "*Enhanced with Deepseek R1 AI Analysis via OpenRouter*\n"
         footer += "*Comprehensive logic, security, quality & best practice review*\n\n"
