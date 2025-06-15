@@ -336,6 +336,66 @@
                 </div>
             </div>
             
+            <!-- PR Review Bot Dashboard -->
+            <div class="service-section">
+                <div class="service-header">
+                    <h2>🤖 PR Review Bot</h2>
+                    <div class="url">GitHub PR Analysis & Code Review Automation</div>
+                </div>
+                <div class="service-body">
+                    <!-- Health Check -->
+                    <div class="test-group">
+                        <h3>Service Health</h3>
+                        <button onclick="testPRReviewHealth()" class="btn">Check PR Review Service</button>
+                        <div id="pr-health-status" class="status"></div>
+                        <div id="pr-health-result" class="result"></div>
+                    </div>
+
+                    <!-- Repository Management -->
+                    <div class="test-group">
+                        <h3>📂 Repository Management</h3>
+                        
+                        <!-- Add Repository -->
+                        <div class="input-group">
+                            <label for="repo-name">Repository (owner/repo):</label>
+                            <input type="text" id="repo-name" placeholder="e.g., facebook/react">
+                        </div>
+                        <div class="input-group">
+                            <label for="discord-channel">Discord Channel ID (optional):</label>
+                            <input type="text" id="discord-channel" placeholder="Discord channel ID for notifications">
+                        </div>
+                        <button onclick="addRepository()" class="btn">Add Repository</button>
+                        <div id="add-repo-status" class="status"></div>
+                        <div id="add-repo-result" class="result"></div>
+                        
+                        <!-- Repository List -->
+                        <div style="margin-top: 20px;">
+                            <button onclick="loadWatchedRepos()" class="btn btn-secondary">Refresh Repository List</button>
+                            <div id="repo-list-status" class="status"></div>
+                            <div id="repo-list" class="result"></div>
+                        </div>
+                    </div>
+
+                    <!-- Review History -->
+                    <div class="test-group">
+                        <h3>📋 Recent PR Reviews</h3>
+                        <button onclick="loadRecentReviews()" class="btn">Load Recent Reviews</button>
+                        <div id="reviews-status" class="status"></div>
+                        <div id="reviews-result" class="result"></div>
+                    </div>
+
+                    <!-- Webhook URL Display -->
+                    <div class="test-group">
+                        <h3>🔗 Webhook Configuration</h3>
+                        <p><strong>Webhook URL for GitHub:</strong></p>
+                        <div class="input-group">
+                            <input type="text" id="webhook-url" readonly value="https://your-pr-review-service.onrender.com/webhook" style="background: #f8f9fa;">
+                        </div>
+                        <p><small>Add this URL to your GitHub repository webhooks with "Pull requests" events enabled.</small></p>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Run All Tests -->
             <div class="service-section">
                 <div class="service-header">
@@ -592,7 +652,167 @@
                     `❌ PR REVIEW FAILED\n${result.error || 'Unknown error'}`, 'error');
             }
         }
-        
+          async function testPRReviewHealth() {
+            setStatus('pr-health-status', 'loading');
+            showResult('pr-health-result', 'Checking PR Review service...', 'info');
+            
+            try {
+                const response = await fetch('/api/pr-review/health');
+                const data = await response.json();
+                
+                if (data.success) {
+                    setStatus('pr-health-status', 'success');
+                    const aiStatus = data.data.ai_powered ? '🤖 AI-Enhanced' : '🔧 Rule-based';
+                    const aiModel = data.data.ai_model || 'disabled';
+                    showResult('pr-health-result', `✅ PR Review service is healthy!\n\nService: ${data.service}\nStatus: ${data.status}\nGitHub Connected: ${data.data.github_connected}\nDiscord Connected: ${data.data.discord_connected}\nAI Analysis: ${aiStatus}\nAI Model: ${aiModel}\n\n${data.data.ai_powered ? '🚀 Deepseek R1 AI analysis enabled!' : '⚠️ Add OPENROUTER_API_KEY for AI enhancement'}`, 'success');
+                } else {
+                    setStatus('pr-health-status', 'error');
+                    showResult('pr-health-result', `❌ PR Review service is unhealthy\n\nError: ${data.error}\nDetails: ${data.details || 'No additional details'}`, 'error');
+                }
+            } catch (error) {
+                setStatus('pr-health-status', 'error');
+                showResult('pr-health-result', `❌ Failed to connect to PR Review service\n\nError: ${error.message}\nMake sure the service is running on port 8002`, 'error');
+            }
+        }
+
+        async function addRepository() {
+            const repoName = document.getElementById('repo-name').value.trim();
+            const discordChannel = document.getElementById('discord-channel').value.trim();
+            
+            if (!repoName) {
+                showResult('add-repo-result', '❌ Please enter a repository name', 'error');
+                return;
+            }
+            
+            if (!repoName.includes('/') || repoName.split('/').length !== 2) {
+                showResult('add-repo-result', '❌ Repository name must be in format "owner/repo"', 'error');
+                return;
+            }
+            
+            setStatus('add-repo-status', 'loading');
+            showResult('add-repo-result', 'Adding repository...', 'info');
+            
+            try {
+                const response = await fetch('/api/pr-review/repos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        repo_name: repoName,
+                        discord_channel_id: discordChannel || null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    setStatus('add-repo-status', 'success');
+                    showResult('add-repo-result', `✅ Repository added successfully!\n\nRepository: ${repoName}\nStatus: Active\nWebhook: Configure at GitHub\n\nDon't forget to add the webhook URL to your GitHub repository settings!`, 'success');
+                    
+                    // Clear form
+                    document.getElementById('repo-name').value = '';
+                    document.getElementById('discord-channel').value = '';
+                    
+                    // Refresh repo list
+                    setTimeout(loadWatchedRepos, 1000);
+                } else {
+                    setStatus('add-repo-status', 'error');
+                    showResult('add-repo-result', `❌ Failed to add repository\n\nError: ${data.error}\nDetails: ${data.details || 'No additional details'}`, 'error');
+                }
+            } catch (error) {
+                setStatus('add-repo-status', 'error');
+                showResult('add-repo-result', `❌ Failed to add repository\n\nError: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadWatchedRepos() {
+            setStatus('repo-list-status', 'loading');
+            showResult('repo-list', 'Loading watched repositories...', 'info');
+            
+            try {
+                const response = await fetch('/api/pr-review/repos');
+                const data = await response.json();
+                
+                if (data.success) {
+                    setStatus('repo-list-status', 'success');
+                    
+                    if (data.data.length === 0) {
+                        showResult('repo-list', '📭 No repositories being watched yet.\n\nAdd a repository above to start monitoring PRs!', 'info');
+                        return;
+                    }
+                    
+                    let repoList = `📂 Watched Repositories (${data.data.length}):\n\n`;
+                    
+                    data.data.forEach((repo, index) => {
+                        repoList += `${index + 1}. ${repo.repo_name}\n`;
+                        repoList += `   Owner: ${repo.owner}\n`;
+                        repoList += `   Status: ${repo.is_active ? '✅ Active' : '❌ Inactive'}\n`;
+                        repoList += `   Webhook: ${repo.webhook_configured ? '✅ Configured' : '⚠️ Needs Setup'}\n`;
+                        if (repo.discord_channel_id) {
+                            repoList += `   Discord: ${repo.discord_channel_id}\n`;
+                        }
+                        repoList += `   Added: ${new Date(repo.created_at).toLocaleDateString()}\n`;
+                        repoList += `   [Remove: repo-${repo.id}]\n\n`;
+                    });
+                    
+                    showResult('repo-list', repoList, 'success');
+                } else {
+                    setStatus('repo-list-status', 'error');
+                    showResult('repo-list', `❌ Failed to load repositories\n\nError: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                setStatus('repo-list-status', 'error');
+                showResult('repo-list', `❌ Failed to load repositories\n\nError: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadRecentReviews() {
+            setStatus('reviews-status', 'loading');
+            showResult('reviews-result', 'Loading recent PR reviews...', 'info');
+            
+            try {
+                const response = await fetch('/api/pr-review/reviews');
+                const data = await response.json();
+                
+                if (data.success) {
+                    setStatus('reviews-status', 'success');
+                    
+                    if (data.data.reviews.length === 0) {
+                        showResult('reviews-result', '📭 No PR reviews yet.\n\nReviews will appear here once PRs are opened in watched repositories!', 'info');
+                        return;
+                    }
+                    
+                    let reviewList = `📋 Recent PR Reviews (${data.data.reviews.length}):\n\n`;
+                    
+                    data.data.reviews.forEach((review, index) => {
+                        const reviewDate = new Date(review.reviewed_at).toLocaleDateString();
+                        const reviewTime = new Date(review.reviewed_at).toLocaleTimeString();
+                        
+                        reviewList += `${index + 1}. ${review.repo_name}#${review.pr_number}\n`;
+                        reviewList += `   Title: "${review.pr_title}"\n`;
+                        reviewList += `   Author: ${review.pr_author}\n`;
+                        reviewList += `   Issues Found: ${review.issues_found}\n`;
+                        reviewList += `   Security Score: ${review.security_score}/10\n`;
+                        reviewList += `   Status: ${review.status}\n`;
+                        reviewList += `   Reviewed: ${reviewDate} ${reviewTime}\n`;
+                        if (review.pr_url) {
+                            reviewList += `   URL: ${review.pr_url}\n`;
+                        }
+                        reviewList += '\n';
+                    });
+                    
+                    showResult('reviews-result', reviewList, 'success');
+                } else {
+                    setStatus('reviews-status', 'error');
+                    showResult('reviews-result', `❌ Failed to load reviews\n\nError: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                setStatus('reviews-status', 'error');
+                showResult('reviews-result', `❌ Failed to load reviews\n\nError: ${error.message}`, 'error');
+            }
+        }
+
         async function runAllTests() {
             setStatus('all-tests-status', 'loading');
             showResult('all-tests-result', 'Running comprehensive test suite...\n\n', 'loading');

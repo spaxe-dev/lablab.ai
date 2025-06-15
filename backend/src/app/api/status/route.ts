@@ -78,7 +78,8 @@ export async function GET() {
         'health': '/api/auto-tests/health'
       },
       'pr-review': {
-        'review': '/api/pr-review/review',
+        'repos': '/api/pr-review/repos',
+        'reviews': '/api/pr-review/reviews',
         'health': '/api/pr-review/health'
       }
     }
