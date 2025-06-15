@@ -488,7 +488,7 @@ For EACH issue found, provide:
                     "messages": [
                         {
                             "role": "system",
-                            "content": "You are a senior principal engineer performing comprehensive code reviews. Be extremely thorough in finding logic, security, quality, and design issues."
+                            "content": "You are an expert code reviewer. Find ALL bugs and logical errors. Specifically look for: 1) Functions that don't return values they create, 2) Unused variables, 3) Functions called incorrectly (like printing function objects), 4) Missing return statements, 5) Any logical mistakes. Be extremely thorough and don't miss obvious bugs."
                         },
                         {
                             "role": "user", 
