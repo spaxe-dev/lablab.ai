@@ -364,11 +364,53 @@
                 <p class="text-sm mt-2">Built for the LabLab.ai Hackathon 2025</p>
             </div>
         </div>
-    </footer>
-
-    <script>
-        // Configuration
-        const API_BASE_URL = 'https://pr-scope.onrender.com'; // Your deployed dependency health service
+    </footer>    <script>
+        // Configuration - Multiple API endpoints for redundancy
+        const API_ENDPOINTS = {
+            // Primary: Direct dependency health service
+            dependency_health: 'https://dependency-health.onrender.com',
+            // Fallback: Next.js backend
+            backend: 'https://stackhub-backend.onrender.com/api/dependency-health',
+            // Local development
+            local: 'http://localhost:8001'
+        };
+        
+        let currentAPI = API_ENDPOINTS.dependency_health;
+        
+        // Test API connectivity and switch if needed
+        async function testAPIConnectivity() {
+            const endpoints = Object.values(API_ENDPOINTS);
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`${endpoint}/health`, { 
+                        method: 'GET',
+                        timeout: 5000 
+                    });
+                    if (response.ok) {
+                        currentAPI = endpoint;
+                        console.log(`✅ Connected to API: ${endpoint}`);
+                        return endpoint;
+                    }
+                } catch (error) {
+                    console.log(`❌ Failed to connect to: ${endpoint}`);
+                }
+            }
+            
+            console.warn('⚠️ No API endpoints available');
+            return null;
+        }
+        
+        // Initialize API connection on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            testAPIConnectivity();
+            
+            // Add animation delays
+            const cards = document.querySelectorAll('.animate-slide-up');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
         
         // Page Navigation
         function showPage(pageId) {
@@ -412,27 +454,48 @@
 
             showLoading();
             
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/dependency-health/check-github`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ repo_url: `https://github.com/${repo}` })
-                });
+            // Ensure API connectivity
+            await testAPIConnectivity();
+            
+            const endpoints = [
+                `${currentAPI}/check-github`,
+                `${API_ENDPOINTS.backend}/check-github`,
+                `${API_ENDPOINTS.dependency_health}/check-github`
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`🔍 Trying: ${endpoint}`);
+                    
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            repo_url: `https://github.com/${repo}`,
+                            repo: repo // Some APIs might expect just the repo name
+                        })
+                    });
 
-                const data = await response.json();
-                
-                if (response.ok) {
-                    displayResults(data);
-                } else {
-                    throw new Error(data.detail || 'Analysis failed');
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        console.log('✅ GitHub analysis successful:', data);
+                        displayResults(data);
+                        return;
+                    } else {
+                        console.warn(`❌ ${endpoint} failed:`, data);
+                        throw new Error(data.detail || data.message || 'Analysis failed');
+                    }
+                } catch (error) {
+                    console.error(`❌ Error with ${endpoint}:`, error);
+                    continue; // Try next endpoint
                 }
-            } catch (error) {
-                hideLoading();
-                alert('Error analyzing repository: ' + error.message);
-                console.error('Analysis error:', error);
             }
+            
+            hideLoading();
+            alert('Error: All API endpoints failed. Please check the repository name and try again.');
         }
 
         // File Upload Analysis
@@ -460,27 +523,45 @@
 
             showLoading();
 
+            // Ensure API connectivity
+            await testAPIConnectivity();
+
             const formData = new FormData();
             formData.append('file', file);
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/dependency-health/check-file`, {
-                    method: 'POST',
-                    body: formData
-                });
+            const endpoints = [
+                `${currentAPI}/check-file`,
+                `${API_ENDPOINTS.backend}/check-file`,
+                `${API_ENDPOINTS.dependency_health}/check-file`
+            ];
 
-                const data = await response.json();
-                
-                if (response.ok) {
-                    displayResults(data);
-                } else {
-                    throw new Error(data.detail || 'Analysis failed');
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`🔍 Trying file upload: ${endpoint}`);
+                    
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        console.log('✅ File analysis successful:', data);
+                        displayResults(data);
+                        return;
+                    } else {
+                        console.warn(`❌ ${endpoint} failed:`, data);
+                        throw new Error(data.detail || data.message || 'Analysis failed');
+                    }
+                } catch (error) {
+                    console.error(`❌ Error with ${endpoint}:`, error);
+                    continue; // Try next endpoint
                 }
-            } catch (error) {
-                hideLoading();
-                alert('Error analyzing file: ' + error.message);
-                console.error('Analysis error:', error);
             }
+            
+            hideLoading();
+            alert('Error: All API endpoints failed. Please check your file and try again.');
         }
 
         // UI Helper Functions
@@ -496,11 +577,28 @@
         function displayResults(data) {
             hideLoading();
             
+            console.log('📊 Displaying results:', data);
+            
+            // Handle different response formats
+            let dependencies = [];
+            if (data.dependencies) {
+                dependencies = data.dependencies;
+            } else if (data.results) {
+                dependencies = data.results;
+            } else if (Array.isArray(data)) {
+                dependencies = data;
+            }
+            
             // Update summary cards
-            const dependencies = data.dependencies || [];
-            const secure = dependencies.filter(dep => dep.status === 'secure').length;
-            const outdated = dependencies.filter(dep => dep.status === 'outdated').length;
-            const vulnerable = dependencies.filter(dep => dep.status === 'vulnerable').length;
+            const secure = dependencies.filter(dep => 
+                dep.status === 'secure' || dep.status === 'safe' || dep.vulnerabilities_count === 0
+            ).length;
+            const outdated = dependencies.filter(dep => 
+                dep.status === 'outdated' || dep.needs_update
+            ).length;
+            const vulnerable = dependencies.filter(dep => 
+                dep.status === 'vulnerable' || (dep.vulnerabilities_count && dep.vulnerabilities_count > 0)
+            ).length;
             
             document.getElementById('secure-count').textContent = secure;
             document.getElementById('outdated-count').textContent = outdated;
@@ -512,24 +610,69 @@
             
             // Display detailed results
             const resultsContainer = document.getElementById('dependency-results');
-            resultsContainer.innerHTML = generateResultsHTML(data);
+            resultsContainer.innerHTML = generateResultsHTML(data, dependencies);
             
             // Show results section
             document.getElementById('results-section').classList.remove('hidden');
         }
 
-        function generateResultsHTML(data) {
-            if (!data.dependencies || data.dependencies.length === 0) {
-                return '<div class="text-center py-12"><p class="text-gray-400">No dependencies found to analyze.</p></div>';
+        function generateResultsHTML(originalData, dependencies) {
+            if (!dependencies || dependencies.length === 0) {
+                return `
+                    <div class="text-center py-12">
+                        <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
+                        <p class="text-gray-400 mb-4">No dependencies found to analyze.</p>
+                        <details class="text-left bg-slate-800/30 rounded-lg p-4">
+                            <summary class="cursor-pointer text-sm font-medium text-gray-300 mb-2">Debug Info</summary>
+                            <pre class="text-xs text-gray-400 overflow-auto">${JSON.stringify(originalData, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
             }
 
             let html = '<div class="space-y-4">';
             
-            data.dependencies.forEach(dep => {
-                const statusColor = dep.status === 'secure' ? 'green' : 
-                                  dep.status === 'outdated' ? 'yellow' : 'red';
-                const statusIcon = dep.status === 'secure' ? 'shield-alt' : 
-                                  dep.status === 'outdated' ? 'exclamation-triangle' : 'bug';
+            dependencies.forEach(dep => {
+                // Handle different response formats
+                const name = dep.name || dep.package_name || dep.dependency?.name || 'Unknown';
+                const version = dep.version || dep.current_version || dep.dependency?.version || 'Unknown';
+                const latest = dep.latest_version || dep.newest_version || 'Unknown';
+                
+                // Determine status
+                let status = 'unknown';
+                let statusColor = 'gray';
+                let statusIcon = 'question';
+                
+                if (dep.status) {
+                    status = dep.status;
+                } else if (dep.vulnerabilities_count > 0) {
+                    status = 'vulnerable';
+                } else if (dep.needs_update) {
+                    status = 'outdated';
+                } else {
+                    status = 'secure';
+                }
+                
+                switch (status) {
+                    case 'secure':
+                    case 'safe':
+                        statusColor = 'green';
+                        statusIcon = 'shield-alt';
+                        break;
+                    case 'outdated':
+                    case 'needs_update':
+                        statusColor = 'yellow';
+                        statusIcon = 'exclamation-triangle';
+                        break;
+                    case 'vulnerable':
+                    case 'danger':
+                        statusColor = 'red';
+                        statusIcon = 'bug';
+                        break;
+                }
+                
+                // Get vulnerabilities
+                const vulnerabilities = dep.vulnerabilities || dep.security_issues || [];
                 
                 html += `
                     <div class="bg-slate-800/30 rounded-xl p-6 border border-slate-700">
@@ -539,22 +682,32 @@
                                     <i class="fas fa-${statusIcon} text-white"></i>
                                 </div>
                                 <div>
-                                    <h4 class="text-lg font-semibold text-white">${dep.name}</h4>
-                                    <p class="text-gray-400">Version: ${dep.version}</p>
-                                    ${dep.latest_version ? `<p class="text-gray-400">Latest: ${dep.latest_version}</p>` : ''}
+                                    <h4 class="text-lg font-semibold text-white">${name}</h4>
+                                    <p class="text-gray-400">Current: ${version}</p>
+                                    ${latest !== 'Unknown' ? `<p class="text-gray-400">Latest: ${latest}</p>` : ''}
                                 </div>
                             </div>
                             <span class="px-3 py-1 rounded-full text-xs font-medium bg-${statusColor}-500/20 text-${statusColor}-400">
-                                ${dep.status.toUpperCase()}
+                                ${status.toUpperCase()}
                             </span>
                         </div>
-                        ${dep.vulnerabilities && dep.vulnerabilities.length > 0 ? `
+                        ${vulnerabilities.length > 0 ? `
                             <div class="mt-4 pt-4 border-t border-slate-700">
-                                <h5 class="text-sm font-medium text-red-400 mb-2">Vulnerabilities:</h5>
+                                <h5 class="text-sm font-medium text-red-400 mb-2">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Vulnerabilities (${vulnerabilities.length}):
+                                </h5>
                                 <ul class="space-y-1">
-                                    ${dep.vulnerabilities.map(vuln => `
-                                        <li class="text-sm text-gray-300">• ${vuln.title || vuln.description || 'Security vulnerability found'}</li>
+                                    ${vulnerabilities.slice(0, 3).map(vuln => `
+                                        <li class="text-sm text-gray-300">
+                                            • ${vuln.title || vuln.description || vuln.summary || 'Security vulnerability found'}
+                                        </li>
                                     `).join('')}
+                                    ${vulnerabilities.length > 3 ? `
+                                        <li class="text-sm text-gray-400">
+                                            • ... and ${vulnerabilities.length - 3} more
+                                        </li>
+                                    ` : ''}
                                 </ul>
                             </div>
                         ` : ''}
@@ -568,17 +721,22 @@
             });
             
             html += '</div>';
+            
+            // Add debug info
+            html += `
+                <div class="mt-8 pt-6 border-t border-slate-700">
+                    <details class="bg-slate-800/30 rounded-lg p-4">
+                        <summary class="cursor-pointer text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-bug mr-1"></i>
+                            Debug: Raw API Response
+                        </summary>
+                        <pre class="text-xs text-gray-400 overflow-auto mt-2">${JSON.stringify(originalData, null, 2)}</pre>
+                    </details>
+                </div>
+            `;
+            
             return html;
         }
-
-        // Initialize dashboard stats
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add some initial animation delays
-            const cards = document.querySelectorAll('.animate-slide-up');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-            });
-        });
     </script>
 
     <style>
