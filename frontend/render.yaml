@@ -1,0 +1,12 @@
+services:
+  - type: static_site
+    name: lablab-ai-frontend
+    buildCommand: echo "No build required - static HTML"
+    staticPublishPath: ./frontend
+    envVars:
+      - key: NODE_ENV
+        value: production
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /dashboard.html
