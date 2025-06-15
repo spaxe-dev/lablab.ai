@@ -113,15 +113,11 @@ async def get_installation_access_token(installation_id: int) -> str:
         else:
             raise HTTPException(status_code=response.status_code, detail="Failed to get installation token")
 
-def get_github_client_for_installation(installation_id: int) -> Github:
+async def get_github_client_for_installation(installation_id: int) -> Github:
     """Get authenticated GitHub client for a specific installation"""
-    # This is a simplified version - in practice you'd cache tokens
-    # For now, we'll use a simpler approach with installation ID
-    return Github(auth=Github.Auth.AppInstallationAuth(
-        app_id=GITHUB_APP_ID,
-        private_key=GITHUB_APP_PRIVATE_KEY,
-        installation_id=installation_id
-    ))
+    # Get installation access token
+    access_token = await get_installation_access_token(installation_id)
+    return Github(access_token)
 
 # Initialize GitHub App (no default client needed)
 github_app_configured = bool(GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY)
@@ -249,13 +245,12 @@ async def github_webhook(request: Request, db: Session = Depends(get_db)):
 async def process_pr_analysis(installation_id: int, repo_name: str, pr_number: int, pr_title: str, 
                             pr_author: str, pr_url: str):
     """Analyze PR and send notifications using GitHub App authentication"""
-    
-    # Create database session
+      # Create database session
     db = SessionLocal()
     
     try:
         # Get GitHub client for this installation
-        github_client = get_github_client_for_installation(installation_id)
+        github_client = await get_github_client_for_installation(installation_id)
         
         # Get PR details
         repo = github_client.get_repo(repo_name)
@@ -383,7 +378,7 @@ async def ai_code_review(code_content: str, filename: str, file_patch: str) -> D
         return {"ai_issues": [], "ai_suggestions": [], "ai_summary": "AI review not available"}
     
     try:
-        prompt = f"""You are an expert code reviewer. Analyze this code change and provide a detailed review.
+        prompt = f"""You are a senior principal engineer at a top tech company (Google/Meta/Netflix) performing a comprehensive code review. Analyze this code change with extreme attention to detail, as if this code will serve millions of users.
 
 **File:** {filename}
 **Code Changes:**
@@ -391,31 +386,93 @@ async def ai_code_review(code_content: str, filename: str, file_patch: str) -> D
 {file_patch}
 ```
 
-Please provide:
-1. **Security Issues**: Any potential security vulnerabilities
-2. **Code Quality Issues**: Logic errors, bugs, or poor practices
-3. **Performance Issues**: Inefficiencies or optimization opportunities
-4. **Best Practices**: Violations of coding standards or conventions
-5. **Suggestions**: Specific improvements with examples
+**CRITICAL ANALYSIS FRAMEWORK:**
 
-Focus on the CHANGED code (lines with + or -). Be concise but thorough. Use emojis for categories.
+🔍 **LOGIC & CORRECTNESS (Be Extremely Thorough):**
+- **Control Flow:** Are all code paths handled? Any unreachable code?
+- **Return Values:** Functions that should return but don't, inconsistent return types
+- **Variable Scope:** Variables used before definition, scope pollution
+- **Loop Logic:** Infinite loops, incorrect termination conditions, iterator issues
+- **Conditional Logic:** Missing else cases, redundant conditions, boolean logic errors
+- **Edge Cases:** Empty arrays/objects, null/undefined handling, boundary values
+- **Type Mismatches:** Implicit conversions, wrong data types
+- **Function Contracts:** Parameters used incorrectly, assumptions violated
+- **Resource Management:** Files/connections not closed, memory not freed
+- **Race Conditions:** Async operations, shared state issues
 
-Format your response as:
-🚨 SECURITY:
-- Issue description
+🚨 **SECURITY VULNERABILITIES (Zero Tolerance):**
+- **Input Validation:** Missing sanitization, injection attack vectors
+- **Authentication:** Weak/missing auth checks, session management
+- **Authorization:** Privilege escalation, access control bypasses
+- **Data Exposure:** Sensitive data in logs/errors, information leakage
+- **Cryptography:** Weak algorithms, improper key handling, timing attacks
+- **File Operations:** Path traversal, unsafe file access
+- **Network:** Unencrypted transmission, certificate validation
+- **Dependencies:** Vulnerable packages, untrusted sources
+- **Error Handling:** Information disclosure in error messages
 
-⚠️ QUALITY:
-- Issue description
+⚠️ **CODE QUALITY (Professional Standards):**
+- **Complexity:** Cyclomatic complexity too high, deeply nested code
+- **Readability:** Unclear variable names, confusing logic flow
+- **Duplication:** Repeated code blocks, copy-paste programming
+- **Coupling:** Tight dependencies, hard to test/modify
+- **Cohesion:** Mixed responsibilities, unclear purpose
+- **Error Handling:** Missing try-catch, inadequate error messages
+- **Constants:** Magic numbers, hardcoded strings
+- **Formatting:** Inconsistent style, poor indentation
 
-⚡ PERFORMANCE:
-- Issue description
+⚡ **PERFORMANCE & EFFICIENCY (Scale Considerations):**
+- **Algorithmic Complexity:** O(n²) where O(n) possible, inefficient data structures
+- **Database:** N+1 queries, missing indexes, unnecessary data fetching
+- **Memory:** Object creation in loops, memory leaks, large objects
+- **Network:** Multiple API calls, large payloads, no caching
+- **CPU:** Unnecessary computations, blocking operations
+- **I/O:** Synchronous operations, inefficient file handling
 
-💡 SUGGESTIONS:
-- Specific improvement with example
+🏗️ **ARCHITECTURE & DESIGN (Enterprise Quality):**
+- **SOLID Principles:** Single responsibility, open/closed, etc.
+- **Design Patterns:** Incorrect pattern usage, missing abstractions
+- **Separation of Concerns:** Business logic mixed with presentation
+- **Dependency Injection:** Hard dependencies, poor testability
+- **Interface Design:** Leaky abstractions, unclear contracts
+- **Error Propagation:** Swallowed exceptions, improper error handling
 
-📋 SUMMARY:
-Brief overall assessment
-"""
+📝 **MAINTAINABILITY & DOCUMENTATION:**
+- **Code Self-Documentation:** Variable/function names don't explain purpose
+- **Comments:** Missing for complex logic, outdated comments
+- **Type Safety:** Missing type annotations, any/unknown types
+- **API Documentation:** Missing parameter descriptions, return value docs
+- **Business Logic:** Complex algorithms without explanation
+
+🧪 **TESTING & RELIABILITY (Production Readiness):**
+- **Edge Case Handling:** Empty inputs, null values, extreme values
+- **Error Scenarios:** Network failures, timeouts, invalid responses
+- **Validation:** Input validation, data integrity checks
+- **Fault Tolerance:** Graceful degradation, retry mechanisms
+- **Monitoring:** Missing logs, no metrics collection
+
+**ANALYSIS METHODOLOGY:**
+1. **Line-by-Line Review:** Examine every added/modified line
+2. **Context Understanding:** Consider the broader function/class purpose
+3. **Impact Assessment:** How changes affect the entire system
+4. **Risk Evaluation:** What could go wrong in production?
+5. **Alternative Solutions:** Are there better approaches?
+
+**RESPONSE FORMAT:**
+For EACH issue found, provide:
+🔴 CRITICAL | � HIGH | � MEDIUM | � LOW [Category]: Line X: [Specific issue description]
+**Problem:** [Detailed explanation of what's wrong]
+**Impact:** [What happens if this isn't fixed]
+**Solution:** [Concrete code example or fix]
+
+**POSITIVE FEEDBACK:** Also mention what's done well!
+
+**FINAL ASSESSMENT:**
+- **Code Quality Score:** X/10
+- **Production Readiness:** [Ready/Needs Work/Major Issues]
+- **Key Priorities:** [Top 3 issues to fix first]
+
+**REMEMBER:** Be as thorough as ChatGPT doing a code review. Don't miss subtle issues that could cause bugs in production!"""
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -431,62 +488,87 @@ Brief overall assessment
                     "messages": [
                         {
                             "role": "system",
-                            "content": "You are an expert senior developer performing code reviews. Be thorough but concise. Focus on security, quality, and best practices."
+                            "content": "You are a senior principal engineer performing comprehensive code reviews. Be extremely thorough in finding logic, security, quality, and design issues."
                         },
                         {
                             "role": "user", 
                             "content": prompt
                         }
                     ],
-                    "max_tokens": 1000,
-                    "temperature": 0.3,
+                    "max_tokens": 1500,  # Increased for more detailed analysis
+                    "temperature": 0.2,  # Lower for more consistent analysis
                     "top_p": 0.9
                 },
-                timeout=30.0
+                timeout=45.0  # Increased timeout for thorough analysis
             )
             
             if response.status_code == 200:
                 result = response.json()
                 ai_response = result["choices"][0]["message"]["content"]
                 
-                # Parse AI response into structured format
+                # Enhanced parsing for the new comprehensive format
                 ai_issues = []
                 ai_suggestions = []
                 ai_summary = ""
                 
                 lines = ai_response.split('\n')
-                current_section = None
                 
                 for line in lines:
                     line = line.strip()
                     if not line:
                         continue
-                        
-                    if line.startswith('🚨 SECURITY:'):
-                        current_section = 'security'
-                    elif line.startswith('⚠️ QUALITY:'):
-                        current_section = 'quality'
-                    elif line.startswith('⚡ PERFORMANCE:'):
-                        current_section = 'performance'
-                    elif line.startswith('💡 SUGGESTIONS:'):
-                        current_section = 'suggestions'
-                    elif line.startswith('📋 SUMMARY:'):
-                        current_section = 'summary'
-                    elif line.startswith('- '):
-                        if current_section in ['security', 'quality', 'performance']:
-                            ai_issues.append(line[2:])  # Remove "- " prefix
-                        elif current_section == 'suggestions':
-                            ai_suggestions.append(line[2:])
-                    elif current_section == 'summary' and line:
-                        ai_summary = line
+                    
+                    # Look for issue lines with severity indicators
+                    if any(severity in line for severity in ['� CRITICAL', '🟠 HIGH', '🟡 MEDIUM', '🟢 LOW']):
+                        # Extract the issue
+                        if '🔴 CRITICAL' in line or '🟠 HIGH' in line:
+                            ai_issues.append(line)
+                        else:
+                            ai_suggestions.append(line)
+                    
+                    # Look for Problem/Impact/Solution blocks
+                    elif line.startswith('**Problem:**') or line.startswith('**Impact:**') or line.startswith('**Solution:**'):
+                        if ai_issues:
+                            ai_issues[-1] += f" | {line}"
+                        elif ai_suggestions:
+                            ai_suggestions[-1] += f" | {line}"
+                    
+                    # Look for final assessment
+                    elif 'Code Quality Score:' in line or 'Production Readiness:' in line:
+                        ai_summary += line + " "
+                    
+                    # Fallback: any line starting with common issue indicators
+                    elif line.startswith(('- ', '• ')) and any(keyword in line.lower() for keyword in [
+                        'error', 'issue', 'problem', 'bug', 'vulnerability', 'security', 'performance', 'logic'
+                    ]):
+                        ai_issues.append(line[2:])  # Remove bullet
+                
+                # If no structured parsing worked, extract key insights
+                if not ai_issues and not ai_suggestions:
+                    # Look for any critical insights in the response
+                    critical_keywords = ['critical', 'security', 'vulnerability', 'error', 'bug', 'issue']
+                    suggestion_keywords = ['suggest', 'recommend', 'consider', 'improve', 'better']
+                    
+                    for line in lines:
+                        line_lower = line.lower()
+                        if any(keyword in line_lower for keyword in critical_keywords):
+                            ai_issues.append(line.strip())
+                        elif any(keyword in line_lower for keyword in suggestion_keywords):
+                            ai_suggestions.append(line.strip())
+                
+                # Clean up the summary
+                if not ai_summary and ai_response:
+                    # Extract the last meaningful line as summary
+                    meaningful_lines = [line for line in lines if line.strip() and not line.startswith(('**', '#', '-', '•'))]
+                    ai_summary = meaningful_lines[-1] if meaningful_lines else "AI analysis completed"
                 
                 # Token usage logging
                 usage = result.get("usage", {})
-                logger.info(f"AI review completed for {filename}. Tokens: {usage.get('total_tokens', 'unknown')}")
+                logger.info(f"AI review completed for {filename}. Issues: {len(ai_issues)}, Suggestions: {len(ai_suggestions)}, Tokens: {usage.get('total_tokens', 'unknown')}")
                 
                 return {
-                    "ai_issues": ai_issues,
-                    "ai_suggestions": ai_suggestions,
+                    "ai_issues": ai_issues[:10],  # Limit to top 10 issues
+                    "ai_suggestions": ai_suggestions[:10],  # Limit to top 10 suggestions
                     "ai_summary": ai_summary or "AI analysis completed",
                     "ai_raw_response": ai_response,
                     "token_usage": usage
@@ -515,7 +597,7 @@ Brief overall assessment
         }
 
 def analyze_file_changes(file) -> Dict:
-    """Analyze individual file changes"""
+    """Enhanced rule-based analysis for individual file changes"""
     
     issues = []
     suggestions = []
@@ -523,44 +605,132 @@ def analyze_file_changes(file) -> Dict:
     filename = file.filename.lower()
     patch = file.patch or ""
     
-    # Security checks
-    if any(keyword in patch.lower() for keyword in ['password', 'secret', 'api_key', 'token']):
+    # Security checks (Critical)
+    if any(keyword in patch.lower() for keyword in ['password', 'secret', 'api_key', 'token', 'private_key']):
         if any(op in patch for op in ['=', ':', 'const', 'let', 'var']):
-            issues.append("🚨 Potential hardcoded credentials detected")
+            issues.append("� CRITICAL: Potential hardcoded credentials detected")
     
     if 'eval(' in patch or 'exec(' in patch:
-        issues.append("🚨 Dangerous function usage detected (eval/exec)")
+        issues.append("� CRITICAL: Dangerous function usage detected (eval/exec)")
     
     if 'sql' in filename and any(keyword in patch.lower() for keyword in ['select', 'insert', 'update', 'delete']):
         if '+' in patch and any(concat in patch for concat in ['+ ', '+ "', "+ '"]):
-            issues.append("🚨 Potential SQL injection vulnerability")
+            issues.append("� CRITICAL: Potential SQL injection vulnerability")
     
-    # Code quality checks
-    if 'todo' in patch.lower() or 'fixme' in patch.lower():
-        suggestions.append("📝 Contains TODO/FIXME comments")
+    # Input validation issues
+    if any(func in patch for func in ['request.', 'req.', 'input(', 'raw_input(']):
+        if 'validate' not in patch.lower() and 'sanitize' not in patch.lower():
+            issues.append("🟠 HIGH: Input validation may be missing")
+    
+    # Unsafe operations
+    if any(unsafe in patch for unsafe in ['pickle.loads', 'yaml.load', 'subprocess.call']):
+        issues.append("🟠 HIGH: Potentially unsafe operation detected")
+    
+    # Code quality checks (Medium/Low)
+    if 'todo' in patch.lower() or 'fixme' in patch.lower() or 'hack' in patch.lower():
+        suggestions.append("� MEDIUM: Contains TODO/FIXME/HACK comments - should be addressed")
     
     if 'console.log' in patch or 'print(' in patch:
-        suggestions.append("🔍 Debug statements detected - consider removing")
+        suggestions.append("� MEDIUM: Debug statements detected - consider removing for production")
     
-    # File size checks
+    # Error handling issues
+    if 'try:' in patch and 'except' not in patch:
+        issues.append("🟠 HIGH: Try block without exception handling")
+    
+    if 'catch' in patch and 'throw' not in patch and 'log' not in patch:
+        suggestions.append("🟡 MEDIUM: Exception caught but not logged or re-thrown")
+    
+    # Performance issues
     if file.additions > 500:
-        suggestions.append("📏 Large file changes - consider breaking into smaller commits")
+        suggestions.append("� MEDIUM: Large file changes - consider breaking into smaller commits")
     
+    if any(loop in patch for loop in ['for ', 'while ']) and any(nested in patch for nested in ['for ', 'while ']):
+        suggestions.append("🟠 HIGH: Nested loops detected - check algorithmic complexity")
+    
+    # Language-specific checks
     if filename.endswith('.py'):
         # Python specific checks
         if 'import *' in patch:
-            issues.append("⚠️ Wildcard imports detected - use specific imports")
+            issues.append("🟠 HIGH: Wildcard imports detected - use specific imports")
         
         if 'except:' in patch and 'except Exception:' not in patch:
-            issues.append("⚠️ Bare except clause - specify exception types")
+            issues.append("🟠 HIGH: Bare except clause - specify exception types")
+        
+        if 'global ' in patch:
+            suggestions.append("🟡 MEDIUM: Global variable usage - consider passing as parameter")
+        
+        if '+' in patch and any(pattern in patch for pattern in ['%s', '%d', '.format(']):
+            suggestions.append("🟢 LOW: Consider using f-strings for better readability")
+        
+        # Check for common anti-patterns
+        if 'len(' in patch and '== 0' in patch:
+            suggestions.append("🟢 LOW: Consider using 'not list' instead of 'len(list) == 0'")
     
     elif filename.endswith(('.js', '.ts', '.jsx', '.tsx')):
         # JavaScript/TypeScript specific checks
         if 'var ' in patch:
-            suggestions.append("💡 Consider using 'let' or 'const' instead of 'var'")
+            suggestions.append("� MEDIUM: Consider using 'let' or 'const' instead of 'var'")
         
         if '== ' in patch or '!= ' in patch:
-            suggestions.append("💡 Consider using strict equality (=== or !==)")
+            suggestions.append("� MEDIUM: Consider using strict equality (=== or !==)")
+        
+        if 'function(' in patch and '=>' not in patch:
+            suggestions.append("🟢 LOW: Consider using arrow functions for consistency")
+        
+        if 'null' in patch and 'undefined' in patch:
+            suggestions.append("🟡 MEDIUM: Mixed null/undefined usage - be consistent")
+        
+        # React specific
+        if filename.endswith(('.jsx', '.tsx')):
+            if 'className=' in patch and 'class=' in patch:
+                issues.append("🟠 HIGH: Mixed className/class attributes in React")
+            
+            if 'useEffect' in patch and '[]' not in patch:
+                suggestions.append("🟡 MEDIUM: useEffect dependency array should be specified")
+    
+    elif filename.endswith(('.java', '.kt')):
+        # Java/Kotlin specific checks
+        if 'System.out.print' in patch:
+            suggestions.append("🟡 MEDIUM: Use logging framework instead of System.out")
+        
+        if 'catch (Exception' in patch:
+            suggestions.append("🟡 MEDIUM: Catching generic Exception - be more specific")
+    
+    elif filename.endswith('.go'):
+        # Go specific checks
+        if 'panic(' in patch:
+            suggestions.append("🟠 HIGH: Panic usage detected - consider returning error")
+        
+        if 'fmt.Print' in patch:
+            suggestions.append("🟡 MEDIUM: Consider using structured logging")
+    
+    elif filename.endswith('.rb'):
+        # Ruby specific checks
+        if 'puts ' in patch:
+            suggestions.append("🟡 MEDIUM: Debug output detected - use proper logging")
+        
+        if 'rescue =>' in patch:
+            suggestions.append("🟡 MEDIUM: Generic rescue clause - specify exception types")
+    
+    # File type specific checks
+    if filename.endswith(('.json', '.yaml', '.yml')):
+        if 'password' in patch.lower() or 'secret' in patch.lower():
+            issues.append("🔴 CRITICAL: Secrets in configuration file")
+    
+    if filename.endswith(('.env', '.config')):
+        if '+' in patch:  # New additions to config files
+            suggestions.append("🟡 MEDIUM: Configuration changes - ensure secrets are not exposed")
+    
+    if filename.endswith('.sql'):
+        if 'drop ' in patch.lower() or 'delete ' in patch.lower():
+            issues.append("🟠 HIGH: Destructive SQL operations detected")
+    
+    # Docker/Infrastructure files
+    if filename in ['dockerfile', 'docker-compose.yml', 'docker-compose.yaml']:
+        if 'root' in patch.lower():
+            suggestions.append("🟠 HIGH: Running as root in container - security risk")
+        if 'password' in patch.lower():
+            issues.append("🔴 CRITICAL: Password in Docker configuration")
     
     return {
         "issues": issues,
@@ -568,69 +738,134 @@ def analyze_file_changes(file) -> Dict:
     }
 
 async def post_github_review_comment(pr, analysis: Dict):
-    """Post review comment on GitHub PR with AI insights"""
+    """Post comprehensive review comment on GitHub PR with AI insights"""
     
-    ai_powered = "🤖 AI-Enhanced " if analysis.get("ai_enabled") else ""
+    ai_powered = "🤖 **AI-Enhanced** " if analysis.get("ai_enabled") else ""
+    total_combined_issues = analysis['total_issues'] + analysis.get('ai_issues', 0)
     
-    comment = f"""## {ai_powered}Code Review Summary
+    # Determine overall status
+    if total_combined_issues == 0:
+        status_icon = "✅"
+        status_text = "**APPROVED** - Excellent code quality!"
+    elif total_combined_issues <= 2:
+        status_icon = "✨"
+        status_text = "**LOOKS GOOD** - Minor issues only"
+    elif total_combined_issues <= 5:
+        status_icon = "⚠️"
+        status_text = "**NEEDS REVIEW** - Several issues found"
+    else:
+        status_icon = "🚨"
+        status_text = "**REQUIRES CHANGES** - Multiple issues detected"
+    
+    comment = f"""## {ai_powered}Code Review Report {status_icon}
 
-**Files Analyzed:** {analysis['files_analyzed']}  
-**Rule-based Issues:** {analysis['total_issues']}  
-**AI-detected Issues:** {analysis.get('ai_issues', 0)}  
-**Security Score:** {analysis['security_score']}/10  
+### {status_text}
+
+**📊 Analysis Summary:**
+- **Files Analyzed:** {analysis['files_analyzed']}
+- **Rule-based Issues:** {analysis['total_issues']} 
+- **AI-detected Issues:** {analysis.get('ai_issues', 0)}
+- **Security Score:** {analysis['security_score']}/10 ⭐
 
 {analysis.get('summary', '')}
 
+---
 """
     
     if analysis.get('files'):
-        comment += "### 📁 Detailed Analysis\n\n"
+        comment += "## 📁 Detailed File Analysis\n\n"
+        
         for file_info in analysis['files']:
-            comment += f"#### `{file_info['filename']}`\n"
-            comment += f"*+{file_info['additions']} -{file_info['deletions']} lines*\n\n"
+            file_icon = "🔴" if file_info.get('issues') else "🟡" if file_info.get('ai_issues') else "✅"
+            comment += f"### {file_icon} `{file_info['filename']}`\n"
+            comment += f"**Changes:** `+{file_info['additions']} -{file_info['deletions']}` lines\n\n"
             
-            # Traditional issues
-            if file_info.get('issues'):
-                comment += "**🔍 Rule-based Analysis:**\n"
-                for issue in file_info['issues']:
+            # Critical issues first (rule-based)
+            critical_issues = [issue for issue in file_info.get('issues', []) if '🔴 CRITICAL' in issue]
+            high_issues = [issue for issue in file_info.get('issues', []) if '🟠 HIGH' in issue]
+            medium_issues = [issue for issue in file_info.get('issues', []) if '🟡 MEDIUM' in issue]
+            low_issues = [issue for issue in file_info.get('issues', []) if '🟢 LOW' in issue]
+            
+            if critical_issues:
+                comment += "**� CRITICAL ISSUES:**\n"
+                for issue in critical_issues:
                     comment += f"- {issue}\n"
                 comment += "\n"
             
-            # AI issues  
+            if high_issues:
+                comment += "**🟠 HIGH PRIORITY:**\n"
+                for issue in high_issues:
+                    comment += f"- {issue}\n"
+                comment += "\n"
+            
+            # AI Analysis (always high priority)
             if file_info.get('ai_issues'):
-                comment += "**🤖 AI Analysis:**\n"
-                for issue in file_info['ai_issues']:
+                comment += "**🤖 AI CODE ANALYSIS:**\n"
+                for issue in file_info['ai_issues'][:5]:  # Limit to top 5
                     comment += f"- {issue}\n"
                 comment += "\n"
             
-            # Traditional suggestions
-            if file_info.get('suggestions'):
-                comment += "**💡 Suggestions:**\n"
-                for suggestion in file_info['suggestions']:
+            # Medium priority issues
+            if medium_issues:
+                comment += "**🟡 MEDIUM PRIORITY:**\n"
+                for issue in medium_issues:
+                    comment += f"- {issue}\n"
+                comment += "\n"
+            
+            # Suggestions
+            all_suggestions = file_info.get('suggestions', []) + file_info.get('ai_suggestions', [])
+            if all_suggestions:
+                comment += "**💡 SUGGESTIONS & IMPROVEMENTS:**\n"
+                for suggestion in all_suggestions[:5]:  # Limit to top 5
                     comment += f"- {suggestion}\n"
                 comment += "\n"
             
-            # AI suggestions
-            if file_info.get('ai_suggestions'):
-                comment += "**✨ AI Suggestions:**\n"
-                for suggestion in file_info['ai_suggestions']:
-                    comment += f"- {suggestion}\n"
-                comment += "\n"
+            # Low priority issues
+            if low_issues:
+                comment += "<details><summary>🟢 <strong>Low Priority Issues</strong> (click to expand)</summary>\n\n"
+                for issue in low_issues:
+                    comment += f"- {issue}\n"
+                comment += "\n</details>\n\n"
             
             # AI summary for this file
             if file_info.get('ai_summary'):
-                comment += f"**🎯 AI Summary:** {file_info['ai_summary']}\n\n"
+                comment += f"**🎯 AI Assessment:** {file_info['ai_summary']}\n\n"
+            
+            comment += "---\n\n"
+    
+    # Overall recommendations
+    if total_combined_issues > 0:
+        comment += "## 🎯 Next Steps\n\n"
+        
+        critical_count = sum(1 for file_info in analysis.get('files', []) 
+                           for issue in file_info.get('issues', []) if '🔴 CRITICAL' in issue)
+        high_count = sum(1 for file_info in analysis.get('files', []) 
+                        for issue in file_info.get('issues', []) if '🟠 HIGH' in issue)
+        ai_issue_count = analysis.get('ai_issues', 0)
+        
+        if critical_count > 0:
+            comment += f"1. **🔴 Address {critical_count} critical security/safety issue(s) immediately**\n"
+        if high_count > 0:
+            comment += f"2. **🟠 Fix {high_count} high-priority issue(s) before merging**\n"
+        if ai_issue_count > 0:
+            comment += f"3. **🤖 Review {ai_issue_count} AI-identified issue(s) for logic/quality**\n"
+        
+        comment += "\n"
     
     # Footer with AI info
-    footer = "---\n*🚀 Powered by AI PR Review Bot | LabLab.ai Hackathon 2025*"
+    footer = "---\n"
+    footer += "**🚀 Automated by AI PR Review Bot** | *LabLab.ai Hackathon 2025*\n\n"
     if analysis.get("ai_enabled"):
-        footer += "\n*Enhanced with Deepseek R1 AI via OpenRouter*"
+        footer += "*🤖 Enhanced with Deepseek R1 AI Analysis via OpenRouter*\n"
+        footer += "*⚡ Comprehensive logic, security, quality & best practice review*"
+    else:
+        footer += "*🔍 Rule-based analysis only - AI enhancement available with API key*"
     
     comment += footer
     
     try:
         pr.create_issue_comment(comment)
-        logger.info(f"GitHub comment posted for PR #{pr.number}")
+        logger.info(f"GitHub comment posted for PR #{pr.number} - {total_combined_issues} total issues found")
     except Exception as e:
         logger.error(f"Error posting GitHub comment: {str(e)}")
 
