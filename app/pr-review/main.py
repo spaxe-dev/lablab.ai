@@ -503,7 +503,7 @@ For EACH issue found, provide:
                             "role": "user", 
                             "content": prompt
                         }
-                    ],                    "max_tokens": 2000,  # Increased for full detailed analysis
+                    ],                    "max_tokens": 10000,  # Increased further to prevent truncation
                     "temperature": 0.1,  # Even lower for more consistent analysis
                     "top_p": 0.9
                 },
@@ -774,11 +774,11 @@ async def post_github_review_comment(pr, analysis: Dict):
 
 ### {status_text}
 
-**📊 Analysis Summary:**
-- **Files Analyzed:** {analysis['files_analyzed']}
-- **Rule-based Issues:** {analysis['total_issues']} 
-- **AI-detected Issues:** {analysis.get('ai_issues', 0)}
-- **Security Score:** {analysis['security_score']}/10 ⭐
+**Analysis Summary:**
+- Files Analyzed: {analysis['files_analyzed']}
+- Rule-based Issues: {analysis['total_issues']} 
+- AI-detected Issues: {analysis.get('ai_issues', 0)}
+- Security Score: {analysis['security_score']}/10
 
 {analysis.get('summary', '')}
 
@@ -786,7 +786,7 @@ async def post_github_review_comment(pr, analysis: Dict):
 """
     
     if analysis.get('files'):
-        comment += "## 📁 Detailed File Analysis\n\n"
+        comment += "## Detailed File Analysis\n\n"
         
         for file_info in analysis['files']:
             file_icon = "🔴" if file_info.get('issues') else "🟡" if file_info.get('ai_issues') else "✅"
@@ -813,7 +813,7 @@ async def post_github_review_comment(pr, analysis: Dict):
             
             # AI Analysis (always high priority)
             if file_info.get('ai_issues'):
-                comment += "**🤖 AI CODE ANALYSIS:**\n"
+                comment += "**AI CODE ANALYSIS:**\n"
                 for issue in file_info['ai_issues'][:5]:  # Limit to top 5
                     comment += f"- {issue}\n"
                 comment += "\n"
@@ -828,7 +828,7 @@ async def post_github_review_comment(pr, analysis: Dict):
             # Suggestions
             all_suggestions = file_info.get('suggestions', []) + file_info.get('ai_suggestions', [])
             if all_suggestions:
-                comment += "**💡 SUGGESTIONS & IMPROVEMENTS:**\n"
+                comment += "**SUGGESTIONS & IMPROVEMENTS:**\n"
                 for suggestion in all_suggestions[:5]:  # Limit to top 5
                     comment += f"- {suggestion}\n"
                 comment += "\n"
@@ -842,13 +842,13 @@ async def post_github_review_comment(pr, analysis: Dict):
             
             # AI summary for this file
             if file_info.get('ai_summary'):
-                comment += f"**🎯 AI Assessment:** {file_info['ai_summary']}\n\n"
+                comment += f"**AI Assessment:** {file_info['ai_summary']}\n\n"
             
             comment += "---\n\n"
     
     # Overall recommendations
     if total_combined_issues > 0:
-        comment += "## 🎯 Next Steps\n\n"
+        comment += "## Next Steps\n\n"
         
         critical_count = sum(1 for file_info in analysis.get('files', []) 
                            for issue in file_info.get('issues', []) if '🔴 CRITICAL' in issue)
@@ -857,29 +857,30 @@ async def post_github_review_comment(pr, analysis: Dict):
         ai_issue_count = analysis.get('ai_issues', 0)
         
         if critical_count > 0:
-            comment += f"1. **🔴 Address {critical_count} critical security/safety issue(s) immediately**\n"
+            comment += f"1. **Address {critical_count} critical security/safety issue(s) immediately**\n"
         if high_count > 0:
-            comment += f"2. **🟠 Fix {high_count} high-priority issue(s) before merging**\n"
+            comment += f"2. **Fix {high_count} high-priority issue(s) before merging**\n"
         if ai_issue_count > 0:
-            comment += f"3. **🤖 Review {ai_issue_count} AI-identified issue(s) for logic/quality**\n"
+            comment += f"3. **Review {ai_issue_count} AI-identified issue(s) for logic/quality**\n"
         
-        comment += "\n"
-      # Footer with AI info
+        comment += "\n"    # Footer with AI info
     footer = "---\n"
-    footer += "**🚀 Automated by AI PR Review Bot** | *LabLab.ai Hackathon 2025*\n\n"
+    footer += "**Automated by AI PR Review Bot** | *LabLab.ai Hackathon 2025*\n\n"
     if analysis.get("ai_enabled"):
-        footer += "*🤖 Enhanced with Deepseek R1 AI Analysis via OpenRouter*\n"
-        footer += "*⚡ Comprehensive logic, security, quality & best practice review*\n\n"
+        footer += "*Enhanced with Deepseek R1 AI Analysis via OpenRouter*\n"
+        footer += "*Comprehensive logic, security, quality & best practice review*\n\n"
         
-        # Add debug section with raw AI response
+        # Add complete debug section with raw AI response
         if analysis.get('files') and any(f.get('ai_raw_response') for f in analysis['files']):
-            footer += "<details><summary>🔧 <strong>Debug: Raw AI Response</strong> (click to expand)</summary>\n\n"
+            footer += "<details><summary><strong>Debug: Complete AI Analysis</strong> (click to expand)</summary>\n\n"
             for file_info in analysis['files']:
                 if file_info.get('ai_raw_response'):
-                    footer += f"**{file_info['filename']}:**\n```\n{file_info['ai_raw_response'][:1000]}...\n```\n\n"
+                    footer += f"**{file_info['filename']} - Full AI Response:**\n```\n{file_info['ai_raw_response']}\n```\n\n"
+                    footer += f"**Parsed Issues:** {len(file_info.get('ai_issues', []))}\n"
+                    footer += f"**Parsed Suggestions:** {len(file_info.get('ai_suggestions', []))}\n\n"
             footer += "</details>\n"
     else:
-        footer += "*🔍 Rule-based analysis only - AI enhancement available with API key*"
+        footer += "*Rule-based analysis only - AI enhancement available with API key*"
     
     comment += footer
     
