@@ -327,8 +327,7 @@ async def analyze_pr_files(pr) -> Dict:
                     combined_issues = file_analysis["issues"] + ai_analysis["ai_issues"]
                     combined_suggestions = file_analysis["suggestions"] + ai_analysis["ai_suggestions"]
                     
-                    if combined_issues or combined_suggestions or ai_analysis.get("ai_summary"):
-                        analysis["files"].append({
+                    if combined_issues or combined_suggestions or ai_analysis.get("ai_summary"):                        analysis["files"].append({
                             "filename": file.filename,
                             "changes": file.changes,
                             "additions": file.additions,
@@ -338,6 +337,7 @@ async def analyze_pr_files(pr) -> Dict:
                             "ai_issues": ai_analysis["ai_issues"],
                             "ai_suggestions": ai_analysis["ai_suggestions"],
                             "ai_summary": ai_analysis.get("ai_summary", ""),
+                            "ai_raw_response": ai_analysis.get("ai_raw_response", ""),  # Include raw AI response
                             "combined_issues": combined_issues,
                             "combined_suggestions": combined_suggestions
                         })
@@ -503,9 +503,8 @@ For EACH issue found, provide:
                             "role": "user", 
                             "content": prompt
                         }
-                    ],
-                    "max_tokens": 1500,  # Increased for more detailed analysis
-                    "temperature": 0.2,  # Lower for more consistent analysis
+                    ],                    "max_tokens": 2000,  # Increased for full detailed analysis
+                    "temperature": 0.1,  # Even lower for more consistent analysis
                     "top_p": 0.9
                 },
                 timeout=45.0  # Increased timeout for thorough analysis
@@ -579,12 +578,11 @@ For EACH issue found, provide:
                 # Token usage logging
                 usage = result.get("usage", {})
                 logger.info(f"AI review completed for {filename}. Issues: {len(ai_issues)}, Suggestions: {len(ai_suggestions)}, Tokens: {usage.get('total_tokens', 'unknown')}")
-                
-                return {
-                    "ai_issues": ai_issues[:10],  # Limit to top 10 issues
-                    "ai_suggestions": ai_suggestions[:10],  # Limit to top 10 suggestions
+                  return {
+                    "ai_issues": ai_issues[:15],  # Increased limit
+                    "ai_suggestions": ai_suggestions[:15], 
                     "ai_summary": ai_summary or "AI analysis completed",
-                    "ai_raw_response": ai_response,
+                    "ai_raw_response": ai_response,  # Include full response for debugging
                     "token_usage": usage
                 }
             else:
@@ -866,13 +864,20 @@ async def post_github_review_comment(pr, analysis: Dict):
             comment += f"3. **🤖 Review {ai_issue_count} AI-identified issue(s) for logic/quality**\n"
         
         comment += "\n"
-    
-    # Footer with AI info
+      # Footer with AI info
     footer = "---\n"
     footer += "**🚀 Automated by AI PR Review Bot** | *LabLab.ai Hackathon 2025*\n\n"
     if analysis.get("ai_enabled"):
         footer += "*🤖 Enhanced with Deepseek R1 AI Analysis via OpenRouter*\n"
-        footer += "*⚡ Comprehensive logic, security, quality & best practice review*"
+        footer += "*⚡ Comprehensive logic, security, quality & best practice review*\n\n"
+        
+        # Add debug section with raw AI response
+        if analysis.get('files') and any(f.get('ai_raw_response') for f in analysis['files']):
+            footer += "<details><summary>🔧 <strong>Debug: Raw AI Response</strong> (click to expand)</summary>\n\n"
+            for file_info in analysis['files']:
+                if file_info.get('ai_raw_response'):
+                    footer += f"**{file_info['filename']}:**\n```\n{file_info['ai_raw_response'][:1000]}...\n```\n\n"
+            footer += "</details>\n"
     else:
         footer += "*🔍 Rule-based analysis only - AI enhancement available with API key*"
     
