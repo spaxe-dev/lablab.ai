@@ -1,19 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="U                <div class="flex flex-col items-start cursor-pointer" onclick="showPage('dashboard')">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
-                            <i class="fas fa-brain text-white text-sm"></i>
-                        </div>
-                        <h1 class="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                            StackHub
-                        </h1>
-                    </div>
-                    <span class="text-xs bg-primary/20 text-primary-light px-2 py-1 rounded-full">
-                        AI-Powered Code Intelligence
-                    </span>
-                </div>meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StackHub - AI-Powered Code Intelligence</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -69,23 +58,16 @@
 </head>
 <body class="bg-black min-h-screen text-white">
     <!-- Navigation -->
-    <nav class="glass-effect border-b border-white/10 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
-                            <i class="fas fa-brain text-white text-sm"></i>
-                        </div>
-                        <h1 class="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                            StackHub
-                        </h1>
+    <nav class="glass-effect border-b border-white/10 sticky top-0 z-50">        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="showPage('dashboard')">
+                    <div class="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
+                        <i class="fas fa-brain text-white text-lg"></i>
                     </div>
-                    <span class="text-xs bg-primary/20 text-primary-light px-2 py-1 rounded-full">
-                        AI-Powered Code Intelligence
-                    </span>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                        StackHub
+                    </h1>
                 </div>
-                <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-8">
                     <button class="nav-link active" data-page="dashboard">
                         <i class="fas fa-chart-line mr-2"></i>Dashboard
                     </button>                    <button class="nav-link" data-page="dependency-health">
@@ -305,7 +287,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="text-center text-gray-400">
                 <p>&copy; 2025 StackHub - AI-Powered Code Intelligence Platform</p>
-                <p class="text-sm mt-2">Built for the LabLab.ai Hackathon 2025</p>
+                <p class="text-sm mt-2">Built for the TraeIDE Limitless Hackathon 2025</p>
             </div>
         </div>
     </footer>    <script>
