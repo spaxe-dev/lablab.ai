@@ -1,47 +1,55 @@
-# 🚀 **AI-Powered Developer Toolkit** | LabLab.ai Hackathon 2025
+# 🚀 **StackHub - AI-Powered Code Intelligence Platform** | LabLab.ai Hackathon 2025
 
 > **Revolutionizing Developer Workflows with AI** 🤖✨
 
-A comprehensive AI-powered toolkit that transforms how developers work - from dependency security to automated testing and intelligent code reviews. Built for the **LabLab.ai Hackathon 2025** to showcase the future of AI-assisted development.
+StackHub is a comprehensive AI-powered code intelligence platform that transforms how developers work - from dependency security analysis to intelligent code reviews. Built for the **LabLab.ai Hackathon 2025** to showcase the future of AI-assisted development.
 
-## 🌟 **The Vision**
+## 🌟 **Live Demo**
+🎯 **StackHub Dashboard**: https://stackhub-dashboard.onrender.com
 
-Imagine a world where:
-- 🛡️ **Security vulnerabilities are caught instantly** before they reach production
-- 🧪 **Tests write themselves** based on your code patterns and requirements  
-- 📋 **AI reviews your PRs** with the expertise of senior developers
-- ⚡ **Development velocity increases 10x** with intelligent automation
+## 🎯 **Core Features**
 
-**This is that world. Welcome to the future of development.**
-
-## 🎯 **AI-Powered Services**
-
-### 🛡️ **Dependency Health Guardian** (Port 8000) - ✅ LIVE
+### 🛡️ **Dependency Health Monitor** - ✅ LIVE
 > *"Your AI security analyst that never sleeps"*
 
 - 🔍 **Smart Vulnerability Detection**: Scans Python & Node.js dependencies with AI-enhanced analysis
-- 🐙 **GitHub X-Ray Vision**: Analyzes entire repositories instantly
+- 🐙 **GitHub Repository Analysis**: Analyzes entire repositories instantly  
 - 📊 **Risk Intelligence**: AI-powered severity assessment and remediation suggestions
 - 🛡️ **Real-time Protection**: Connects to National Vulnerability Database
-- 🤖 **Learning Engine**: Gets smarter with each scan
+- 🤖 **Interactive Dashboard**: Modern, responsive UI with real-time results
+
+### 📋 **AI PR Reviews** - ✅ LIVE  
+> *"Intelligent code reviews powered by advanced AI"*
+
+- 🤖 **Smart Code Analysis**: AI-powered pull request reviews
+- 📝 **Detailed Feedback**: Comprehensive suggestions for code improvement
+- 🔍 **Pattern Recognition**: Identifies potential issues and best practices
+- ⚡ **Instant Results**: Fast, accurate analysis of code changes
 
 
 
-## 🚀 **Limitless Architecture**
+## 🚀 **StackHub Architecture**
 
 ```
 ┌──────────────────────┐    ┌─────────────────────┐    ┌──────────────────────┐
-│   🌐 Smart Frontend   │    │   🔄 AI Orchestrator │    │   🤖 AI Services     │
-│   Adaptive Interface  │───▶│   Next.js Hub       │───▶│   FastAPI Engines    │
-│   (Auto-scaling UI)   │    │   (Port 3000)       │    │   (Ports 8000-8002)  │
+│   🌐 StackHub UI      │    │   🔄 Backend Hub    │    │   🤖 AI Services     │
+│   Modern Dashboard    │───▶│   Next.js API      │───▶│   FastAPI Engines    │
+│   (Render Static)     │    │   (Render Service)  │    │   (Render Services)  │
 └──────────────────────┘    └─────────────────────┘    └──────────────────────┘
                                       │
                                       ▼
                    ┌─────────────────────────────────────────────┐
-                   │   🌍 Global AI Network                      │
-                   │   NVD • GitHub • OpenAI • Code Databases   │
+                   │   🌍 External APIs & Services               │
+                   │   NVD • GitHub • OpenRouter • Databases    │
                    └─────────────────────────────────────────────┘
 ```
+
+## 🌐 **Live Services**
+
+- 🎯 **StackHub Dashboard**: https://stackhub-dashboard.onrender.com
+- 🛡️ **Dependency Health API**: https://dependency-health.onrender.com
+- 🔄 **Backend Hub**: https://stackhub-backend.onrender.com
+- 📋 **PR Review Bot**: [GitHub Integration Active]
 
 
 ### **🚀 Manual Setup (Current)**
@@ -75,16 +83,23 @@ npm run dev
 - 📊 **System Status**: http://localhost:3000/api/status
 - 🌐 **Frontend**: Open `frontend/index.html`
 
-## 🔮 **AI-Enhanced API Endpoints**
+## 🔮 **StackHub API Endpoints**
 
-### **🤖 System Intelligence**
-- `GET /api/status` - AI system health & service orchestration
+### **🤖 System Status**
+- `GET /api/status` - System health & service status
 
-### **🛡️ Security AI (Dependency Guardian)**
-- `POST /api/dependency-health/check-file` - AI-powered file analysis
-- `POST /api/dependency-health/check-github` - Repository X-ray scanning
-- `POST /api/dependency-health/check-text` - Intelligent text analysis
-- `GET /api/dependency-health/health` - Guardian health status
+### **🛡️ Dependency Health API**
+- `POST /api/dependency-health/check-file` - Upload and analyze dependency files
+- `POST /api/dependency-health/check-github` - Analyze GitHub repositories
+- `POST /api/dependency-health/check-text` - Analyze dependency text
+- `GET /api/dependency-health/health` - Service health check
+
+### **📋 PR Review API**  
+- `POST /api/pr-review/review` - AI-powered pull request analysis
+- `GET /api/pr-review/health` - PR review service status
+
+### **🕷️ GitHub Webhooks**
+- `POST /api/webhooks/github` - GitHub integration endpoint
 
 ## 🛠️ **Next-Gen Tech Stack**
 
@@ -104,39 +119,34 @@ npm run dev
 **☁️ Cloud Infrastructure:**
 - **Render** - Scalable cloud deployment
 
-## 📁 **AI-Optimized Project Structure**
+## 📁 **StackHub Project Structure**
 
 ```
-lablab.ai/                          # 🚀 AI Toolkit Root
-├── app/                            # 🤖 AI Services
-│   ├── dependency-health/          # 🛡️ Security AI (LIVE)
-│   │   ├── main.py                 # FastAPI AI engine
-│   │   ├── ai_models/              # Custom AI models
-│   │   ├── intelligence/           # AI analysis logic
-│   │   └── requirements.txt        # AI dependencies
-│   ├── auto-tests/                 # 🧪 Testing AI (DEVELOPMENT)
-│   │   ├── main.py                 # Test generation engine
-│   │   ├── pattern_recognition/    # Code pattern AI
-│   │   └── test_generators/        # Smart test creators
-│   └── pr-review/                  # 📋 Review AI (DEVELOPMENT)
-│       ├── main.py                 # Code review engine
-│       ├── analysis_models/        # Deep code analysis
-│       └── suggestion_engine/      # Improvement AI
-├── backend/                        # 🔄 AI Orchestrator
-│   ├── src/app/api/               # Unified AI API
-│   │   ├── status/                # System intelligence
-│   │   ├── dependency-health/     # Security proxy
-│   │   ├── auto-tests/            # Testing proxy
-│   │   └── pr-review/             # Review proxy
-│   └── ai-config/                 # AI service configuration
-├── frontend/                       # 🌐 Adaptive Interface
-│   ├── index.html                 # Smart dashboard
-│   ├── ai-components/             # AI-powered widgets
-│   └── intelligence/              # Frontend AI logic
-└── docs/                          # 📚 AI Documentation
-    ├── API.md                     # AI API reference
-    ├── DEPLOYMENT.md              # Cloud deployment
-    └── AI_MODELS.md               # AI model documentation
+stackhub/                           # 🚀 StackHub Root
+├── app/                           # 🤖 AI Services
+│   ├── dependency-health/         # 🛡️ Security Analysis (LIVE)
+│   │   ├── main.py               # FastAPI security engine
+│   │   ├── utils.py              # Analysis utilities
+│   │   └── requirements.txt      # Service dependencies
+│   ├── pr-review/                # 📋 PR Review AI (LIVE)
+│   │   ├── main.py              # Code review engine
+│   │   └── AI prompts & logic   # Review intelligence
+│   └── auto-tests/               # 🧪 Test Generation (DEV)
+│       └── main.py              # Test generation engine
+├── backend/                      # 🔄 API Hub
+│   ├── src/app/api/             # Unified API endpoints
+│   │   ├── status/              # System status
+│   │   ├── dependency-health/   # Security API proxy
+│   │   ├── pr-review/           # Review API proxy
+│   │   └── webhooks/            # GitHub integration
+│   └── convex/                  # Database layer
+├── frontend/                    # 🌐 StackHub Dashboard
+│   ├── dashboard.html          # Main dashboard interface
+│   ├── index.html             # Landing page
+│   └── render.yaml            # Deployment config
+└── docs/                       # 📚 Documentation
+    ├── README.md              # This file
+    └── deployment guides      # Setup instructions
 ```
 
 
