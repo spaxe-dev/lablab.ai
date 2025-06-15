@@ -3,7 +3,7 @@ uvicorn[standard]==0.24.0
 sqlalchemy==2.0.23
 PyGithub==1.59.1
 python-multipart==0.0.6
-pydantic==2.5.0
+pydantic==2.8.2
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 httpx==0.25.2
